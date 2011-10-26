@@ -52,7 +52,6 @@ public class CMUpdaterManager extends PreferenceActivity {
 	 */
 	private class PrefRefreshDevList implements OnPreferenceClickListener {
 
-		@Override
 		public boolean onPreferenceClick(Preference pref) {
 			pref.setSummary(getString(R.string.ref_dev_list_running));
 
