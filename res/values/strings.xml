@@ -9,7 +9,7 @@
     <string name="ref_dev_list">Refresh Device List</string>
     <string name="ref_dev_list_summary">Click Here to refresh Device List</string>
     <string name="ref_dev_list_running">Refreshing Device List...</string>
-    
     <string name="pref_device_loading">Loading list of supported devices</string>
+    <string name="btn_refresh">Refresh</string>
 
 </resources>

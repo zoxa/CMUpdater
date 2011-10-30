@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="arr_device_name">
+        <item>ace</item>
+        <item>blade</item>
+        <item>bravo</item>
+        <item>bravoc</item>
+        <item>buzz</item>
+        <item>captivatemtd</item>
+        <item>cdma_droid2</item>
+        <item>cdma_shadow</item>
+        <item>click</item>
+        <item>crespo</item>
+        <item>crespo4g</item>
+        <item>encore</item>
+        <item>espresso</item>
+        <item>fascinatemtd</item>
+        <item>galaxys2</item>
+        <item>galaxysmtd</item>
+        <item>glacier</item>
+        <item>hero</item>
+        <item>heroc</item>
+        <item>inc</item>
+        <item>legend</item>
+        <item>liberty</item>
+        <item>morrison</item>
+        <item>motus</item>
+        <item>one</item>
+        <item>p990</item>
+        <item>p999</item>
+        <item>passion</item>
+        <item>saga</item>
+        <item>sholes</item>
+        <item>smb_a1002</item>
+        <item>speedy</item>
+        <item>supersonic</item>
+        <item>v9</item>
+        <item>vega</item>
+        <item>vibrantmtd</item>
+        <item>vision</item>
+        <item>vivo</item>
+        <item>vivow</item>
+        <item>z71</item>
+        <item>zeppelin</item>
+        <item>zero</item>
+    </string-array>
+    <string-array name="arr_device_model">
+        <item>Ace (HTC Ace)</item>
+        <item>Blade (ZTE Blade)</item>
+        <item>Bravo (HTC Desire)</item>
+        <item>Bravoc (HTC Desire CDMA)</item>
+        <item>Buzz (HTC Wildfire)</item>
+        <item>CaptivateMTD (Samsung Captivate SGH-I896/SGH-I897)</item>
+        <item>CDMA_Droid2 (Motorola Droid 2)</item>
+        <item>CDMA_Shadow (Motorola Droid X)</item>
+        <item>Click (HTC Click/Tattoo)</item>
+        <item>Crespo (Nexus S)</item>
+        <item>Crespo4G (Nexus S 4G)</item>
+        <item>Encore (Barnes &amp; Noble Nook Color)</item>
+        <item>Espresso (TMobile myTouch 3G Slide)</item>
+        <item>FascinateMTD (Samsung Fascinate SCH-I500)</item>
+        <item>Galaxys2 (GT-I9100, GT-I9100M, GT-I9100T)</item>
+        <item>GalaxysMTD (Samsung Galaxy S)</item>
+        <item>Glacier (HTC Glacier)</item>
+        <item>Hero (HTC Hero GSM)</item>
+        <item>Heroc (HTC Hero GSM)</item>
+        <item>Inc (HTC Incredible)</item>
+        <item>Legend (HTC Legend)</item>
+        <item>Liberty (HTC Aria)</item>
+        <item>Morrison (Motorola Cliq)</item>
+        <item>Motus (Motorola Backflip)</item>
+        <item>One (Geeksphone One)</item>
+        <item>P990 (LG Optimus 2X)</item>
+        <item>P999 (LG G2X)</item>
+        <item>Passion (Nexus One)</item>
+        <item>Saga (HTC Desire S)</item>
+        <item>Sholes (Motorola Droid)</item>
+        <item>Smb_a1002 (Viewsonic G Tablet)</item>
+        <item>Speedy (HTC Evo Shift 4G)</item>
+        <item>Supersonic (HTC Evo 4G)</item>
+        <item>V9 (ZTE V9)</item>
+        <item>Vega (Advent Vega)</item>
+        <item>VibrantMTD (Samsung Vibrant SGH-T959)</item>
+        <item>Vision (HTC Vision)</item>
+        <item>Vivo (HTC Incredible S)</item>
+        <item>Vivow (HTC Incredible 2)</item>
+        <item>z71 (z71 Variants)</item>
+        <item>Zeppelin (Motorola Cliq XT)</item>
+        <item>Zero (Geeksphone Zero)</item>
+    </string-array>
+
+</resources>

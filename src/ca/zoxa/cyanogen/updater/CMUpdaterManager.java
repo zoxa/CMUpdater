@@ -7,55 +7,49 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 
 /**
  * @author azim
  * 
  */
-public class CMUpdaterManager extends PreferenceActivity {
+public class CMUpdaterManager extends PreferenceActivity
+{
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		addPreferencesFromResource(R.xml.pref_main);
+    @Override
+    public void onCreate( Bundle savedInstanceState )
+    {
+        super.onCreate( savedInstanceState );
+        addPreferencesFromResource( R.xml.pref_main );
 
-		Preference cur_device = (Preference) findPreference("cur_device");
-		cur_device.setSummary(Build.MODEL + " (" + Build.DEVICE + ")");
+        Preference cur_device = (Preference) findPreference( "cur_device" );
+        cur_device.setSummary( Build.MODEL + " (" + Build.DEVICE + ")" );
 
-		Preference ref_dev_list = (Preference) findPreference("ref_dev_list");
-		ref_dev_list.setOnPreferenceClickListener(new PrefRefreshDevList());
+        ListPreference device = (ListPreference) findPreference( "device" );
+        device.setDefaultValue( Build.DEVICE );
+        device.setSummary( device.getEntry() );
+        device.setOnPreferenceChangeListener( new Preference.OnPreferenceChangeListener() {
 
-		ListPreference device = (ListPreference) findPreference("device");
-		device.setSummary(device.getValue());
-		this.fillDeviceList(device);
+            /**
+             * Trying to auto-update Summary field for the preference ;)
+             */
+            @Override
+            public boolean onPreferenceChange( Preference arg0, Object newValue )
+            {
+                // dirty way to find correlated entry name for new value
+                ListPreference device = (ListPreference) arg0;
+                CharSequence vals[] = device.getEntryValues();
+                for ( int c = 0; c < vals.length; c++ )
+                {
+                    if ( vals[c] == newValue )
+                    {
+                        device.setSummary( device.getEntries()[c] );
+                        return true;
+                    }
+                }
+                return false;
+            }
 
-	}
-
-	private void fillDeviceList(ListPreference device) {
-		// get list from db
-
-		// if failed set "loading message"
-		CharSequence[] entries = { getString(R.string.pref_device_loading) };
-		CharSequence[] entryValues = { "" };
-		device.setEntries(entries);
-		device.setEntryValues(entryValues);
-		device.setSummary(R.string.pref_device_loading);
-
-	}
-
-	/**
-	 * On Preference Click, run Device Refresh
-	 * 
-	 * @author azim
-	 */
-	private class PrefRefreshDevList implements OnPreferenceClickListener {
-
-		public boolean onPreferenceClick(Preference pref) {
-			pref.setSummary(getString(R.string.ref_dev_list_running));
-
-			return true;
-		}
-	}
+        } );
+    }
 }

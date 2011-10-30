@@ -10,4 +10,19 @@
         android:layout_height="wrap_content"
         android:text="" />
 
+    <Button
+        android:id="@+id/btnRefresh"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_refresh" />
+
+    <TextView
+        android:id="@+id/resJSON"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scrollHorizontally="true"
+        android:scrollbars="horizontal|vertical"
+        android:text="---" />
+
 </LinearLayout>
