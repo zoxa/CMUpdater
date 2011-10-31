@@ -4,12 +4,24 @@
     <string name="app_name">CM Updater</string>
     <string name="app_name_cmupman">CM Updater</string>
     <string name="menu_settings">Settings</string>
+    
+    <!-- Preferences -->
     <string name="cur_device">Current Device</string>
     <string name="device">Device</string>
     <string name="ref_dev_list">Refresh Device List</string>
     <string name="ref_dev_list_summary">Click Here to refresh Device List</string>
     <string name="ref_dev_list_running">Refreshing Device List...</string>
     <string name="pref_device_loading">Loading list of supported devices</string>
+    <!-- END: Preferences -->
+    
     <string name="btn_refresh">Refresh</string>
+    <string name="msg_refreshing">Refresh started</string>
+    
+    <!-- Error messages -->
+    <string name="err_msg_http_fail">API is down</string>
+    <string name="err_msg_no_host">No Internet connection</string>
+    <string name="err_msg_json_parse">No Internet connection</string>
+    <string name="err_msg_db">No Internet connection</string>
+    <!-- END: Error messages -->
 
 </resources>

@@ -81,10 +81,11 @@ public class CMupdaterActivity extends Activity
         public void onClick( View v )
         {
             Log.d( TAG, "Start refresh" );
-            CMChangelog clog = new CMChangelog( device );
+            CMChangelog clog = new CMChangelog( getApplicationContext(), device );
             clog.refreshChangelog( new ListHandler() );
 
-            Toast.makeText( CMupdaterActivity.this, "Fetching JSON", Toast.LENGTH_LONG ).show();
+            Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
+                    Toast.LENGTH_SHORT ).show();
         }
     }
 
@@ -92,6 +93,35 @@ public class CMupdaterActivity extends Activity
     {
         @Override
         public void handleMessage( Message msg )
-        {}
+        {
+            Bundle data = msg.getData();
+            int error = data.getInt( CMChangelog.MSG_DATA_KEY_ERROR, 0 );
+            if ( error == 0 )
+            {
+                TextView res = (TextView) findViewById( R.id.resJSON );
+                res.setText( String.format( "Updated records %d", data.getInt(
+                        CMChangelog.MSG_UPDATE_COUNT, 0 ) ) );
+            }
+            else if ( CMChangelog.ERROR_CODE_HTTP_FAIL == error )
+            {
+                Toast.makeText( getApplicationContext(), getString( R.string.err_msg_http_fail ),
+                        Toast.LENGTH_LONG ).show();
+            }
+            else if ( CMChangelog.ERROR_CODE_NO_HOST == error )
+            {
+                Toast.makeText( getApplicationContext(), getString( R.string.err_msg_no_host ),
+                        Toast.LENGTH_LONG ).show();
+            }
+            else if ( CMChangelog.ERROR_CODE_JSON_PARSE == error )
+            {
+                Toast.makeText( getApplicationContext(), getString( R.string.err_msg_json_parse ),
+                        Toast.LENGTH_LONG ).show();
+            }
+            else if ( CMChangelog.ERROR_CODE_DB == error )
+            {
+                Toast.makeText( getApplicationContext(), getString( R.string.err_msg_db ),
+                        Toast.LENGTH_LONG ).show();
+            }
+        }
     }
 }
