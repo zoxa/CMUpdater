@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -52,7 +56,8 @@ public class CMChangelog implements Runnable
     // Messages keys
     public static String MSG_DATA_KEY_ERROR = "ERROR";
     public static String MSG_DATA_KEY_ERROR_MSG = "ERROR_MSG";
-    public static String MSG_UPDATE_COUNT = "RESULT_UPD_COUNT";
+    public static String MSG_JSON_COUNT = "RESULT_JSON_COUNT";
+    public static String MSG_DOWNLOADS_COUNT = "RESULT_DOWNLOADS_COUNT";
 
     public CMChangelog( final Context context, final String device )
     {
@@ -76,6 +81,32 @@ public class CMChangelog implements Runnable
     {
         Bundle data = new Bundle();
 
+        // update changelog information
+        // data = updateChangeLog( data );
+
+        // pull latest available zip to download
+        // previous update didn't cause any error
+        if ( data.getInt( MSG_DATA_KEY_ERROR, 0 ) == 0 )
+        {
+            data = updateZipList( data );
+        }
+
+        // return request to handler
+        Message msg = new Message();
+        msg.setData( data );
+        handler.sendMessage( msg );
+    }
+
+    /**
+     * Update Change log records
+     * 
+     * @access private
+     * @param data
+     *            Bundle
+     * @return Bundle
+     */
+    private Bundle updateChangeLog( Bundle data )
+    {
         JSONArray json = null;
 
         try
@@ -118,7 +149,7 @@ public class CMChangelog implements Runnable
             {
                 // write to DB
                 int result = saveChangeLog( json );
-                data.putInt( MSG_UPDATE_COUNT, result );
+                data.putInt( MSG_JSON_COUNT, result );
                 Log.i( TAG, "Records Updated: " + result );
             }
             catch ( SQLException e )
@@ -137,11 +168,7 @@ public class CMChangelog implements Runnable
             }
         }
 
-        // return request to handler
-        Message msg = new Message();
-        msg.setData( data );
-        handler.sendMessage( msg );
-
+        return data;
     }
 
     private JSONArray getChangelogJSON() throws ClientProtocolException, IOException,
@@ -163,7 +190,6 @@ public class CMChangelog implements Runnable
             InputStream instream = entity.getContent();
             String result = CMChangelog.convertStreamToString( instream );
             instream.close();
-            Log.i( TAG, "Result of converstion: [" + result + "]" );
             Log.i( TAG, "--- Result.length: [" + result.length() + "]" );
 
             if ( result.length() > 0 )
@@ -177,6 +203,42 @@ public class CMChangelog implements Runnable
 
         return null;
     }
+
+    private int saveChangeLog( JSONArray json ) throws JSONException
+    {
+        int res = 0;
+        NightliesAdapter na = new NightliesAdapter( this.context );
+        na.open();
+        Log.i( TAG, "Create DB and get connection" );
+        // need to parse "2011-10-29 06:41:01.000000000"
+        SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSSSSSSS" );
+        for ( int i = 0; i < json.length(); i++ )
+        {
+            JSONObject rec = json.getJSONObject( i );
+            Log.i( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
+            long last_update;
+            try
+            {
+                Date d = format.parse( rec.getString( "last_updated" ) );
+                last_update = d.getTime();
+            }
+            catch ( ParseException e )
+            {
+                Log.d( TAG, "Exception: " + e.getMessage() );
+                last_update = 0;
+            }
+            if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ), rec
+                    .getString( "subject" ), last_update ) )
+            {
+                res++;
+                Log.i( TAG, "Record Saved to DB" );
+            }
+        }
+        na.close();
+        return res;
+    }
+
+    /* END OF CHANGELOG */
 
     private static String convertStreamToString( InputStream is )
             throws UnsupportedEncodingException
@@ -209,7 +271,91 @@ public class CMChangelog implements Runnable
         return sb.toString();
     }
 
-    private int saveChangeLog( JSONArray json ) throws JSONException
+    /**
+     * Connect to download zip list and get the latest ones (with posted date)
+     * 
+     * @param data
+     * @return
+     */
+    private Bundle updateZipList( Bundle data )
+    {
+        List<CMDownloadableRecord> downloads = null;
+        try
+        {
+            downloads = getListofDownloads();
+
+        }
+        catch ( ClientProtocolException e )
+        {
+            // ClientProtocolException in case of an http protocol error
+            Log.e( TAG, "ClientProtocolException", e );
+            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            // Specified un supported encoding, should not happen
+            Log.e( TAG, "UnsupportedEncodingException", e );
+            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+        }
+        catch ( IOException e )
+        {
+            // IOException in case of a problem or the connection was aborted
+            Log.e( TAG, "IOException", e );
+            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_NO_HOST );
+            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+        }
+
+        if ( downloads != null && downloads.size() > 0 )
+        {
+            // writ to DB
+            int result = saveDownloads( downloads );
+            data.putInt( MSG_DOWNLOADS_COUNT, result );
+            Log.i( TAG, "Records Updated: " + result );
+        }
+
+        return data;
+    }
+
+    private List<CMDownloadableRecord> getListofDownloads() throws ClientProtocolException,
+            UnsupportedEncodingException, IOException
+    {
+        // build request
+        HttpGet httpget = new HttpGet( String.format( URL_NIGHTLIES, Uri.encode( device ) ) );
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpResponse response = httpclient.execute( httpget );
+
+        // FIXME: I think we need to make sure that response code
+        // is around >= 200 && < 400
+        Log.i( TAG, "Status:[" + response.getStatusLine().getStatusCode() + "]" );
+        Log.i( TAG, "Status:[" + response.getStatusLine().toString() + "]" );
+
+        HttpEntity entity = response.getEntity();
+        if ( entity != null )
+        {
+            // convert InputStream into String
+            InputStream instream = entity.getContent();
+            String result = CMChangelog.convertStreamToString( instream );
+            instream.close();
+            Log.d( TAG, "--- Result.length: [" + result.length() + "]" );
+
+            // get table from result
+            int table_start = result.indexOf( "<table" );
+            int table_end = result.indexOf( ">", result.indexOf( "</table>", table_start ) );
+            result = result.substring( table_start, table_end );
+
+            Log.d( TAG, "--- Table.length: [" + result.length() + "]" );
+
+            // return String, parse on db save. no need on extra java object
+          
+            return downloads;
+        }
+
+        return null;
+    }
+
+    private int saveDownloads( List<CMDownloadableRecord> downloads )
     {
         int res = 0;
         NightliesAdapter na = new NightliesAdapter( this.context );
@@ -217,18 +363,66 @@ public class CMChangelog implements Runnable
         Log.i( TAG, "Create DB and get connection" );
         for ( int i = 0; i < json.length(); i++ )
         {
-            JSONObject rec = json.getJSONObject( i );
-            Log.i( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
-            Log.i( TAG, "Last Updated: " + rec.getString( "last_updated" ) );
-            long last_update = Date.parse( rec.getString( "last_updated" ) );
-            Log.i( TAG, "Date: " + ( new StringBuilder()).append( last_update ).toString()  );
-            if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ), rec
-                    .getString( "subject" ), last_update ) )
+            /**
+             * Parse this HTML into CMDownloadableRecord in loop
+             */
+            List<CMDownloadableRecord> downloads = new ArrayList<CMDownloadableRecord>();
+            String td;
+            int pos = 0;
+            while ( -1 != (pos = result.indexOf( "<tr>", pos )) )
             {
-                res++;
-                Log.i( TAG, "Record Saved to DB" );
+                try
+                {
+                    CMDownloadableRecord download = new CMDownloadableRecord();
+                    Log.d( TAG, "Found <tr> at " + pos );
+                    for ( int i = 0; i < 5; i++ )
+                    {
+                        pos = result.indexOf( "<td>", pos ) + 4;
+                        Log.d( TAG, "Found <td> at " + pos );
+                        td = result.substring( pos, (pos = result.indexOf( "</td>", pos )) );
+                        Log.d( TAG, "Got td " + td );
+
+                        switch ( i )
+                        {
+                            case 1:
+                                // type: nightly
+                                download.setType( td.trim() );
+                                Log.d( TAG, "Type: " + td );
+                                break;
+                            case 2:
+                                // filename format: cm_***.zip
+                                // md5sum: ****
+                                int _pos = td.indexOf( ">cm_" ) + 1;
+                                download.setFileName( td.substring( _pos,
+                                        td.indexOf( ".zip", _pos ) + 4 ) );
+                                _pos = td.indexOf( "md5sum:" ) + 8;
+                                download.setMd5Sum( td.substring( _pos, td.indexOf( "<", _pos ) ) );
+                                break;
+                            case 3:
+                                // size remove small tag
+                                download.setSize( td.replaceAll( "(</?small>)", "" ) );
+                                break;
+                            case 4:
+                                // added date: remove small tag
+                                download.setDate( td.replaceAll( "(</?small>)", "" ) );
+                                break;
+                            case 0:
+                                // device skip
+                            default:
+                                // skip
+                                break;
+                        }
+                    }
+                    Log.d( TAG, "Converted: " + download );
+                    downloads.add( download );
+                }
+                catch ( ParseException e )
+                {
+                    Log.e( TAG, "ParseException", e );
+                }
             }
         }
+        na.close();
         return res;
     }
 }

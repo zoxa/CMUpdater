@@ -17,6 +17,17 @@ public class NightliesAdapter
     public static String CL_SUBJECT = "subject";
 
     /**
+     * Downloads table
+     */
+    public static String CM_TABLE = "downloads";
+    public static String CM_ID = "_id";
+    public static String CM_TYPE = "type";
+    public static String CM_FILENAME = "filename";
+    public static String CM_MD5SUM = "md5sum";
+    public static String CM_SIZE = "size";
+    public static String CM_DATE = "date_added";
+    
+    /**
      * Private properties
      */
     private Context context;

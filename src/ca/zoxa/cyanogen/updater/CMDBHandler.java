@@ -55,10 +55,19 @@ public class CMDBHandler extends SQLiteOpenHelper
     @Override
     public void onCreate( SQLiteDatabase sqLiteDatabase )
     {
+        // create clog table
         String sql = "CREATE TABLE " + NightliesAdapter.CL_TABLE + " (" + NightliesAdapter.CL_ID
                 + " INTEGER primary key, " + NightliesAdapter.CL_PROJECT + " TEXT, "
                 + NightliesAdapter.CL_SUBJECT + " TEXT, " + NightliesAdapter.CL_LAST_UPDATED
                 + " INTEGER)";
+
+        sqLiteDatabase.execSQL( sql );
+
+        // create downloads table
+        sql = "CREATE TABLE " + NightliesAdapter.CM_TABLE + " (" + NightliesAdapter.CM_ID
+                + " INTEGER primary key, " + NightliesAdapter.CM_TYPE + " TEXT, "
+                + NightliesAdapter.CM_FILENAME + " TEXT, " + NightliesAdapter.CM_MD5SUM + " TEXT, "
+                + NightliesAdapter.CM_SIZE + " TEXT, " + NightliesAdapter.CM_DATE + " INTEGER)";
 
         sqLiteDatabase.execSQL( sql );
     }
@@ -74,6 +83,7 @@ public class CMDBHandler extends SQLiteOpenHelper
     public void onUpgrade( SQLiteDatabase sqLiteDatabase, int oldV, int newV )
     {
         sqLiteDatabase.execSQL( "DROP TABLE " + NightliesAdapter.CL_TABLE );
+        sqLiteDatabase.execSQL( "DROP TABLE " + NightliesAdapter.CM_TABLE );
         onCreate( sqLiteDatabase );
     }
 }
