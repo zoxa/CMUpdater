@@ -7,9 +7,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -31,398 +29,466 @@ import android.util.Log;
 
 public class CMChangelog implements Runnable
 {
-    // Device code name
-    private final String device;
-    private final Context context;
+	// Device code name
+	private final String		device;
+	private final Context		context;
 
-    // JSON CM change log
-    private final String URL_CHANGELOG_JSON = "http://cm-nightlies.appspot.com/changelog/?device=%s";
+	// JSON CM change log
+	private final String		URL_CHANGELOG_JSON		= "http://cm-nightlies.appspot.com/changelog/?device=%s";
 
-    // List of nightlies
-    private final String URL_NIGHTLIES = "http://download.cyanogenmod.com/?device=%s";
+	// List of nightlies
+	private final String		URL_NIGHTLIES			= "http://download.cyanogenmod.com/?device=%s";
 
-    // Handler
-    private Handler handler;
+	// Handler
+	private Handler				handler;
 
-    // Tag for the logs
-    private static final String TAG = "CMCLog";
+	// Tag for the logs
+	private static final String	TAG						= "CMCLog";
 
-    // Error codes
-    public static int ERROR_CODE_HTTP_FAIL = 1;
-    public static int ERROR_CODE_NO_HOST = ERROR_CODE_HTTP_FAIL + 1;
-    public static int ERROR_CODE_JSON_PARSE = ERROR_CODE_NO_HOST + 1;
-    public static int ERROR_CODE_DB = ERROR_CODE_JSON_PARSE + 1;
+	// Error codes
+	public static int			ERROR_CODE_DB_OPEN		= 1;
+	public static int			ERROR_CODE_HTTP_FAIL	= ERROR_CODE_DB_OPEN + 1;
+	public static int			ERROR_CODE_NO_HOST		= ERROR_CODE_HTTP_FAIL + 1;
+	public static int			ERROR_CODE_JSON_PARSE	= ERROR_CODE_NO_HOST + 1;
 
-    // Messages keys
-    public static String MSG_DATA_KEY_ERROR = "ERROR";
-    public static String MSG_DATA_KEY_ERROR_MSG = "ERROR_MSG";
-    public static String MSG_JSON_COUNT = "RESULT_JSON_COUNT";
-    public static String MSG_DOWNLOADS_COUNT = "RESULT_DOWNLOADS_COUNT";
+	// Error Messages keys
+	public static String		MSG_DATA_KEY_ERROR		= "ERROR";
+	public static String		MSG_DATA_KEY_ERROR_MSG	= "ERROR_MSG";
 
-    public CMChangelog( final Context context, final String device )
-    {
-        this.context = context;
-        this.device = device;
-    }
+	// Positive Message keys
+	public static String		MSG_JSON_COUNT			= "RESULT_JSON_COUNT";
+	public static String		MSG_DOWNLOADS_COUNT		= "RESULT_DOWNLOADS_COUNT";
 
-    /**
-     * Refresh and write changes to db
-     */
-    public void refreshChangelog( final Handler handler )
-    {
-        this.handler = handler;
+	public CMChangelog( final Context context, final String device )
+	{
+		this.context = context;
+		this.device = device;
+	}
 
-        Thread thread = new Thread( this );
-        thread.start();
-    }
+	/**
+	 * Refresh and write changes to db
+	 */
+	public void refreshChangelog( final Handler handler )
+	{
+		this.handler = handler;
 
-    @Override
-    public void run()
-    {
-        Bundle data = new Bundle();
+		Thread thread = new Thread( this );
+		thread.start();
+	}
 
-        // update changelog information
-        // data = updateChangeLog( data );
+	public void run()
+	{
+		Bundle data = new Bundle();
+		NightliesAdapter na = null;
 
-        // pull latest available zip to download
-        // previous update didn't cause any error
-        if ( data.getInt( MSG_DATA_KEY_ERROR, 0 ) == 0 )
-        {
-            data = updateZipList( data );
-        }
+		try
+		{
+			// open db connection
+			na = new NightliesAdapter( this.context );
+			na.open();
+		}
+		catch ( SQLException e )
+		{
+			// Failed creating db connection
+			Log.e( TAG, "SQLException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_DB_OPEN );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
 
-        // return request to handler
-        Message msg = new Message();
-        msg.setData( data );
-        handler.sendMessage( msg );
-    }
+		if ( na != null )
+		{
+			// update changelog information
+			data = updateChangeLog( data, na );
 
-    /**
-     * Update Change log records
-     * 
-     * @access private
-     * @param data
-     *            Bundle
-     * @return Bundle
-     */
-    private Bundle updateChangeLog( Bundle data )
-    {
-        JSONArray json = null;
+			// pull latest available zip to download
+			data = updateZipList( data, na );
 
-        try
-        {
-            // get JSON data from cm-nightlies.appspot.com
-            json = getChangelogJSON();
-        }
-        catch ( ClientProtocolException e )
-        {
-            // ClientProtocolException in case of an http protocol error
-            Log.e( TAG, "ClientProtocolException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            // Specified un supported encoding, should not happen
-            Log.e( TAG, "UnsupportedEncodingException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
-        catch ( JSONException e )
-        {
-            // Cannot parse response
-            Log.e( TAG, "JSONException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_JSON_PARSE );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
-        catch ( IOException e )
-        {
-            // IOException in case of a problem or the connection was aborted
-            Log.e( TAG, "IOException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_NO_HOST );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
+			// remove old records
+			na.cleanup();
+			na.close();
+		}
 
-        if ( json != null )
-        {
-            try
-            {
-                // write to DB
-                int result = saveChangeLog( json );
-                data.putInt( MSG_JSON_COUNT, result );
-                Log.i( TAG, "Records Updated: " + result );
-            }
-            catch ( SQLException e )
-            {
-                // SQLException Problem with connecting to db
-                Log.e( TAG, "SQLException", e );
-                data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_DB );
-                data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-            }
-            catch ( JSONException e )
-            {
-                // JSONException problem parsing
-                Log.e( TAG, "SQLException", e );
-                data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_JSON_PARSE );
-                data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-            }
-        }
+		// return request to handler
+		Message msg = new Message();
+		msg.setData( data );
+		handler.sendMessage( msg );
+	}
 
-        return data;
-    }
+	/* UPDATE JSON change log */
+	/**
+	 * Run change log updater: Call json and parse it and Save changes into db
+	 * 
+	 * @param data
+	 * @param na
+	 * @return
+	 */
+	private Bundle updateChangeLog( Bundle data, NightliesAdapter na )
+	{
+		JSONArray json = null;
 
-    private JSONArray getChangelogJSON() throws ClientProtocolException, IOException,
-            UnsupportedEncodingException, JSONException
-    {
-        // build request
-        HttpGet httpget = new HttpGet( String.format( URL_CHANGELOG_JSON, Uri.encode( device ) ) );
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpResponse response = httpclient.execute( httpget );
+		// get JSON data from cm-nightlies.appspot.com
+		try
+		{
+			json = getChangelogJSON();
+		}
+		catch ( ClientProtocolException e )
+		{
+			// ClientProtocolException in case of an http protocol error
+			Log.e( TAG, "ClientProtocolException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( UnsupportedEncodingException e )
+		{
+			// Specified unsupported encoding, should not happen
+			Log.e( TAG, "UnsupportedEncodingException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( IllegalStateException e )
+		{
+			// Entity is empty or was previously pulled oO
+			Log.e( TAG, "IllegalStateException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( JSONException e )
+		{
+			// Cannot parse response
+			Log.e( TAG, "JSONException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_JSON_PARSE );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( IOException e )
+		{
+			// IOException in case of a problem or the connection was aborted
+			Log.e( TAG, "IOException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_NO_HOST );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
 
-        // FIXME: I think we need to make sure that response code
-        // is around >= 200 && < 400
-        Log.i( TAG, "Status:[" + response.getStatusLine().getStatusCode() + "]" );
-        Log.i( TAG, "Status:[" + response.getStatusLine().toString() + "]" );
+		if ( json != null )
+		{
+			try
+			{
+				int result = saveChangeLog( na, json );
+				data.putInt( MSG_JSON_COUNT, result );
+				Log.i( TAG, "Records Updated: " + result );
+			}
+			catch ( JSONException e )
+			{
+				// JSONException problem parsing
+				Log.e( TAG, "SQLException", e );
+				data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_JSON_PARSE );
+				data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+			}
+		}
 
-        HttpEntity entity = response.getEntity();
-        if ( entity != null )
-        {
-            InputStream instream = entity.getContent();
-            String result = CMChangelog.convertStreamToString( instream );
-            instream.close();
-            Log.i( TAG, "--- Result.length: [" + result.length() + "]" );
+		return data;
+	}
 
-            if ( result.length() > 0 )
-            {
-                Log.i( TAG, "Start JSON Parsing..." );
-                JSONArray json = new JSONArray( result );
-                Log.i( TAG, "JSON Parsed..." );
-                return json;
-            }
-        }
+	/**
+	 * Do HTTP call for JSON and get JSONArray
+	 * 
+	 * @return JSONArray parsed change log
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws UnsupportedEncodingException
+	 * @throws JSONException
+	 */
+	private JSONArray getChangelogJSON() throws ClientProtocolException, IllegalStateException,
+			UnsupportedEncodingException, JSONException, IOException
+	{
+		// build request
+		HttpGet httpget = new HttpGet( String.format( URL_CHANGELOG_JSON, Uri.encode( device ) ) );
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpResponse response = httpclient.execute( httpget );
 
-        return null;
-    }
+		// FIXME: I think we need to make sure that response code
+		// is around >= 200 && < 400
+		Log.i( TAG, "Status:[" + response.getStatusLine().getStatusCode() + "]" );
+		Log.i( TAG, "Status:[" + response.getStatusLine().toString() + "]" );
 
-    private int saveChangeLog( JSONArray json ) throws JSONException
-    {
-        int res = 0;
-        NightliesAdapter na = new NightliesAdapter( this.context );
-        na.open();
-        Log.i( TAG, "Create DB and get connection" );
-        // need to parse "2011-10-29 06:41:01.000000000"
-        SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSSSSSSS" );
-        for ( int i = 0; i < json.length(); i++ )
-        {
-            JSONObject rec = json.getJSONObject( i );
-            Log.i( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
-            long last_update;
-            try
-            {
-                Date d = format.parse( rec.getString( "last_updated" ) );
-                last_update = d.getTime();
-            }
-            catch ( ParseException e )
-            {
-                Log.d( TAG, "Exception: " + e.getMessage() );
-                last_update = 0;
-            }
-            if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ), rec
-                    .getString( "subject" ), last_update ) )
-            {
-                res++;
-                Log.i( TAG, "Record Saved to DB" );
-            }
-        }
-        na.close();
-        return res;
-    }
+		HttpEntity entity = response.getEntity();
+		if ( entity != null )
+		{
+			InputStream instream = entity.getContent();
+			String result = CMChangelog.convertStreamToString( instream );
+			instream.close();
+			Log.i( TAG, "--- Result.length: [" + result.length() + "]" );
 
-    /* END OF CHANGELOG */
+			if ( result.length() > 0 )
+			{
+				Log.i( TAG, "Start JSON Parsing..." );
+				JSONArray json = new JSONArray( result );
+				Log.i( TAG, "JSON Parsed..." );
+				return json;
+			}
+		}
 
-    private static String convertStreamToString( InputStream is )
-            throws UnsupportedEncodingException
-    {
-        BufferedReader reader = new BufferedReader( new InputStreamReader( is, "UTF-8" ) );
-        StringBuilder sb = new StringBuilder();
-        String line = null;
-        try
-        {
-            while ( (line = reader.readLine()) != null )
-            {
-                sb.append( line + "\n" );
-            }
-        }
-        catch ( IOException e )
-        {
-            Log.d( TAG, "Exception: " + e.getMessage() );
-        }
-        finally
-        {
-            try
-            {
-                is.close();
-            }
-            catch ( IOException e )
-            {
-                Log.d( TAG, "Exception: " + e.getMessage() );
-            }
-        }
-        return sb.toString();
-    }
+		return null;
+	}
 
-    /**
-     * Connect to download zip list and get the latest ones (with posted date)
-     * 
-     * @param data
-     * @return
-     */
-    private Bundle updateZipList( Bundle data )
-    {
-        List<CMDownloadableRecord> downloads = null;
-        try
-        {
-            downloads = getListofDownloads();
+	/**
+	 * Save pulled JSON array into db
+	 * 
+	 * @param na
+	 *            NightliesAdapter opened connection
+	 * @param json
+	 *            JSONArray pulled and parse change log record
+	 * @return number of changes
+	 * @throws JSONException
+	 */
+	private int saveChangeLog( NightliesAdapter na, JSONArray json ) throws JSONException
+	{
+		int res = 0;
+		// need to parse "2011-10-29 06:41:01.000000000"
+		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSSSSSSS" );
+		for ( int i = 0; i < json.length(); i++ )
+		{
+			JSONObject rec = json.getJSONObject( i );
+			Log.i( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
+			long last_update;
+			try
+			{
+				Date d = format.parse( rec.getString( "last_updated" ) );
+				last_update = d.getTime();
+			}
+			catch ( ParseException e )
+			{
+				Log.d( TAG, "Exception: " + e.getMessage() );
+				last_update = 0;
+			}
+			if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ),
+					rec.getString( "subject" ), last_update ) )
+			{
+				res++;
+				Log.i( TAG, "Record Saved to DB" );
+			}
+		}
+		return res;
+	}
 
-        }
-        catch ( ClientProtocolException e )
-        {
-            // ClientProtocolException in case of an http protocol error
-            Log.e( TAG, "ClientProtocolException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            // Specified un supported encoding, should not happen
-            Log.e( TAG, "UnsupportedEncodingException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
-        catch ( IOException e )
-        {
-            // IOException in case of a problem or the connection was aborted
-            Log.e( TAG, "IOException", e );
-            data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_NO_HOST );
-            data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
-        }
+	/* END: UPDATE JSON change log */
 
-        if ( downloads != null && downloads.size() > 0 )
-        {
-            // writ to DB
-            int result = saveDownloads( downloads );
-            data.putInt( MSG_DOWNLOADS_COUNT, result );
-            Log.i( TAG, "Records Updated: " + result );
-        }
+	/* UPDATE Downloads list */
+	/**
+	 * Do HTTP call to pull html.table dom, and save this infomration into db
+	 * 
+	 * @param data
+	 * @param na
+	 * @return
+	 */
+	private Bundle updateZipList( Bundle data, NightliesAdapter na )
+	{
+		String table = null;
 
-        return data;
-    }
+		try
+		{
+			table = getListofDownloads();
+		}
+		catch ( ClientProtocolException e )
+		{
+			// ClientProtocolException in case of an http protocol error
+			Log.e( TAG, "ClientProtocolException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( IllegalStateException e )
+		{
+			// Entity is empty or was previously pulled oO
+			Log.e( TAG, "IllegalStateException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( UnsupportedEncodingException e )
+		{
+			// Specified unsupported encoding, should not happen
+			Log.e( TAG, "UnsupportedEncodingException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_HTTP_FAIL );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
+		catch ( IOException e )
+		{
+			// IOException in case of a problem or the connection was aborted
+			Log.e( TAG, "IOException", e );
+			data.putInt( MSG_DATA_KEY_ERROR, ERROR_CODE_NO_HOST );
+			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
+		}
 
-    private List<CMDownloadableRecord> getListofDownloads() throws ClientProtocolException,
-            UnsupportedEncodingException, IOException
-    {
-        // build request
-        HttpGet httpget = new HttpGet( String.format( URL_NIGHTLIES, Uri.encode( device ) ) );
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpResponse response = httpclient.execute( httpget );
+		if ( table != null && table.length() > 0 )
+		{
+			// writ to DB
+			int result = saveDownloads( na, table );
+			data.putInt( MSG_DOWNLOADS_COUNT, result );
+			Log.i( TAG, "Records Updated: " + result );
+		}
 
-        // FIXME: I think we need to make sure that response code
-        // is around >= 200 && < 400
-        Log.i( TAG, "Status:[" + response.getStatusLine().getStatusCode() + "]" );
-        Log.i( TAG, "Status:[" + response.getStatusLine().toString() + "]" );
+		return data;
+	}
 
-        HttpEntity entity = response.getEntity();
-        if ( entity != null )
-        {
-            // convert InputStream into String
-            InputStream instream = entity.getContent();
-            String result = CMChangelog.convertStreamToString( instream );
-            instream.close();
-            Log.d( TAG, "--- Result.length: [" + result.length() + "]" );
+	/**
+	 * Do HTML call and return table portion of it
+	 * 
+	 * @return
+	 * @throws ClientProtocolException
+	 * @throws IllegalStateException
+	 * @throws UnsupportedEncodingException
+	 * @throws IOException
+	 */
+	private String getListofDownloads() throws ClientProtocolException, IllegalStateException,
+			UnsupportedEncodingException, IOException
+	{
+		// build request
+		HttpGet httpget = new HttpGet( String.format( URL_NIGHTLIES, Uri.encode( device ) ) );
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpResponse response = httpclient.execute( httpget );
 
-            // get table from result
-            int table_start = result.indexOf( "<table" );
-            int table_end = result.indexOf( ">", result.indexOf( "</table>", table_start ) );
-            result = result.substring( table_start, table_end );
+		// FIXME: I think we need to make sure that response code
+		// is around >= 200 && < 400
+		Log.i( TAG, "Status:[" + response.getStatusLine().getStatusCode() + "]" );
+		Log.i( TAG, "Status:[" + response.getStatusLine().toString() + "]" );
 
-            Log.d( TAG, "--- Table.length: [" + result.length() + "]" );
+		HttpEntity entity = response.getEntity();
+		if ( entity != null )
+		{
+			// convert InputStream into String
+			InputStream instream = entity.getContent();
+			String result = CMChangelog.convertStreamToString( instream );
+			instream.close();
+			Log.d( TAG, "--- Result.length: [" + result.length() + "]" );
 
-            // return String, parse on db save. no need on extra java object
-          
-            return downloads;
-        }
+			// get table from result
+			int table_start = result.indexOf( "<table" );
+			int table_end = result.indexOf( ">", result.indexOf( "</table>", table_start ) );
+			result = result.substring( table_start, table_end );
+			Log.d( TAG, "--- Table.length: [" + result.length() + "]" );
+			return result;
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    private int saveDownloads( List<CMDownloadableRecord> downloads )
-    {
-        int res = 0;
-        NightliesAdapter na = new NightliesAdapter( this.context );
-        na.open();
-        Log.i( TAG, "Create DB and get connection" );
-        for ( int i = 0; i < json.length(); i++ )
-        {
-            /**
-             * Parse this HTML into CMDownloadableRecord in loop
-             */
-            List<CMDownloadableRecord> downloads = new ArrayList<CMDownloadableRecord>();
-            String td;
-            int pos = 0;
-            while ( -1 != (pos = result.indexOf( "<tr>", pos )) )
-            {
-                try
-                {
-                    CMDownloadableRecord download = new CMDownloadableRecord();
-                    Log.d( TAG, "Found <tr> at " + pos );
-                    for ( int i = 0; i < 5; i++ )
-                    {
-                        pos = result.indexOf( "<td>", pos ) + 4;
-                        Log.d( TAG, "Found <td> at " + pos );
-                        td = result.substring( pos, (pos = result.indexOf( "</td>", pos )) );
-                        Log.d( TAG, "Got td " + td );
+	/**
+	 * Parse HTML.Table from string and save it into data base
+	 * 
+	 * @param na
+	 * @param table
+	 * @return
+	 */
+	private int saveDownloads( NightliesAdapter na, String table )
+	{
+		int res = 0, pos = 0, _pos = 0;
+		String td;
+		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-                        switch ( i )
-                        {
-                            case 1:
-                                // type: nightly
-                                download.setType( td.trim() );
-                                Log.d( TAG, "Type: " + td );
-                                break;
-                            case 2:
-                                // filename format: cm_***.zip
-                                // md5sum: ****
-                                int _pos = td.indexOf( ">cm_" ) + 1;
-                                download.setFileName( td.substring( _pos,
-                                        td.indexOf( ".zip", _pos ) + 4 ) );
-                                _pos = td.indexOf( "md5sum:" ) + 8;
-                                download.setMd5Sum( td.substring( _pos, td.indexOf( "<", _pos ) ) );
-                                break;
-                            case 3:
-                                // size remove small tag
-                                download.setSize( td.replaceAll( "(</?small>)", "" ) );
-                                break;
-                            case 4:
-                                // added date: remove small tag
-                                download.setDate( td.replaceAll( "(</?small>)", "" ) );
-                                break;
-                            case 0:
-                                // device skip
-                            default:
-                                // skip
-                                break;
-                        }
-                    }
-                    Log.d( TAG, "Converted: " + download );
-                    downloads.add( download );
-                }
-                catch ( ParseException e )
-                {
-                    Log.e( TAG, "ParseException", e );
-                }
-            }
-        }
-        na.close();
-        return res;
-    }
+		// find beginning of the table
+		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) )
+		{
+			Log.d( TAG, "Found <tr> at " + pos );
+			try
+			{
+				String type = null, filename = null, md5sum = null, size = null;
+				Date date_added = null;
+
+				// try to parse td
+				// we know that we have 5 columns. lets loop via tds
+				for ( int i = 0; i < 5; i++ )
+				{
+					pos = table.indexOf( "<td>", pos ) + 4;
+					Log.d( TAG, "Found <td> at " + pos );
+					td = table.substring( pos, ( pos = table.indexOf( "</td>", pos ) ) );
+					Log.d( TAG, "Got td " + td );
+
+					// each td has its own parse rulez
+					switch ( i )
+					{
+						case 1:
+							// type: nightly
+							type = td.trim();
+							break;
+						case 2:
+							// filename format: cm_***.zip
+							_pos = td.indexOf( ">cm_" ) + 1;
+							filename = td.substring( _pos, td.indexOf( ".zip", _pos ) + 4 ).trim();
+
+							// md5sum: ****
+							_pos = td.indexOf( "md5sum:" ) + 8;
+							md5sum = td.substring( _pos, td.indexOf( "<", _pos ) ).trim();
+							break;
+						case 3:
+							// size remove small tag
+							size = td.replaceAll( "(</?small>)", "" ).trim();
+							break;
+						case 4:
+							// added date: remove small tag
+							date_added = format.parse( td.replaceAll( "(</?small>)", "" ).trim() );
+							break;
+
+						case 0:
+							// device: we already know skip it
+						default:
+							// unknown td, skip it
+							break;
+					}
+				}
+
+				Log.i( TAG, "Record: type " + type + " filename " + filename );
+				Log.i( TAG, " md5sum " + md5sum + " size " + size );
+				Log.i( TAG, " Date " + date_added.toString() );
+				// we have all the data now, lets try to save it
+				if ( na.addDownlods( filename, type, md5sum, size, date_added.getTime() ) )
+				{
+					res++;
+					Log.i( TAG, "Record Saved to DB" );
+				}
+			}
+			catch ( ParseException e )
+			{
+				Log.e( TAG, "ParseException", e );
+			}
+		}
+		return res;
+	}
+
+	/* END: UPDATE Downloads list */
+
+	/**
+	 * Function to convert InputStream into String
+	 * 
+	 * @param is
+	 *            InputStream
+	 * @return String
+	 * @throws UnsupportedEncodingException
+	 */
+	private static String convertStreamToString( InputStream is )
+			throws UnsupportedEncodingException
+	{
+		BufferedReader reader = new BufferedReader( new InputStreamReader( is, "UTF-8" ) );
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		try
+		{
+			while ( ( line = reader.readLine() ) != null )
+			{
+				sb.append( line + "\n" );
+			}
+		}
+		catch ( IOException e )
+		{
+			Log.d( TAG, "Exception: " + e.getMessage() );
+		}
+		finally
+		{
+			try
+			{
+				is.close();
+			}
+			catch ( IOException e )
+			{
+				Log.d( TAG, "Exception: " + e.getMessage() );
+			}
+		}
+		return sb.toString();
+	}
 }

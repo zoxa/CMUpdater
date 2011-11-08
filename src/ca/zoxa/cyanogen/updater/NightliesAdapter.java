@@ -7,94 +7,146 @@ import android.database.sqlite.SQLiteDatabase;
 
 public class NightliesAdapter
 {
-    /**
-     * Change log table
-     */
-    public static String CL_TABLE = "clog";
-    public static String CL_ID = "id";
-    public static String CL_PROJECT = "project";
-    public static String CL_LAST_UPDATED = "last_updated";
-    public static String CL_SUBJECT = "subject";
+	/**
+	 * Change log table
+	 */
+	public static String	CL_TABLE		= "clog";
+	public static String	CL_ID			= "id";
+	public static String	CL_PROJECT		= "project";
+	public static String	CL_LAST_UPDATED	= "last_updated";
+	public static String	CL_SUBJECT		= "subject";
 
-    /**
-     * Downloads table
-     */
-    public static String CM_TABLE = "downloads";
-    public static String CM_ID = "_id";
-    public static String CM_TYPE = "type";
-    public static String CM_FILENAME = "filename";
-    public static String CM_MD5SUM = "md5sum";
-    public static String CM_SIZE = "size";
-    public static String CM_DATE = "date_added";
-    
-    /**
-     * Private properties
-     */
-    private Context context;
-    private SQLiteDatabase database;
-    private CMDBHandler dbHelper;
+	/**
+	 * Downloads table
+	 */
+	public static String	CM_TABLE		= "downloads";
+	public static String	CM_ID			= "_id";
+	public static String	CM_TYPE			= "type";
+	public static String	CM_FILENAME		= "filename";
+	public static String	CM_MD5SUM		= "md5sum";
+	public static String	CM_SIZE			= "size";
+	public static String	CM_DATE			= "date_added";
 
-    public NightliesAdapter( Context context )
-    {
-        this.context = context;
-    }
+	/**
+	 * Private properties
+	 */
+	private final Context	context;
+	private SQLiteDatabase	database;
+	private CMDBHandler		dbHelper;
 
-    protected void finalize()
-    {
-        close();
-    }
+	public NightliesAdapter( Context context )
+	{
+		this.context = context;
+	}
 
-    public NightliesAdapter open() throws SQLException
-    {
-        dbHelper = new CMDBHandler( context );
-        database = dbHelper.getWritableDatabase();
-        return this;
-    }
+	@Override
+	protected void finalize()
+	{
+		close();
+	}
 
-    public void close()
-    {
-        dbHelper.close();
-    }
+	public NightliesAdapter open() throws SQLException
+	{
+		dbHelper = new CMDBHandler( context );
+		database = dbHelper.getWritableDatabase();
+		return this;
+	}
 
-    /* FUNCTIONS FOR CHANGE LOG TABLE */
-    /**
-     * Generate Change log record for db
-     * 
-     * @param ID
-     * @param PROJECT
-     * @param SUBJECT
-     * @param LAST_UPDATED
-     * @return boolean
-     */
-    private ContentValues createCLContent( final int ID, final String PROJECT,
-            final String SUBJECT, final long LAST_UPDATED )
-    {
-        ContentValues values = new ContentValues();
-        values.put( CL_ID, ID );
-        values.put( CL_PROJECT, PROJECT );
-        values.put( CL_SUBJECT, SUBJECT );
-        values.put( CL_LAST_UPDATED, LAST_UPDATED );
-        return values;
-    }
+	public void close()
+	{
+		dbHelper.close();
+	}
 
-    /**
-     * Add Change log record into data base, overwrite on conflict
-     * 
-     * @param ID
-     * @param PROJECT
-     * @param SUBJECT
-     * @param LAST_UPDATED
-     * @return boolean
-     */
-    public boolean addChangeLog( final int ID, final String PROJECT, final String SUBJECT,
-            final long LAST_UPDATED )
-    {
-        ContentValues initialValues = createCLContent( ID, PROJECT, SUBJECT, LAST_UPDATED );
+	public void cleanup()
+	{
+		// TODO: Add cleanup logic here
+	}
 
-        long res = database.insertWithOnConflict( CL_TABLE, null, initialValues,
-                SQLiteDatabase.CONFLICT_REPLACE );
-        return (res != -1);
-    }
+	/* FUNCTIONS FOR CHANGE LOG TABLE */
+	/**
+	 * Generate Change log record for db
+	 * 
+	 * @param id
+	 * @param project
+	 * @param subject
+	 * @param last_updated
+	 * @return ContentValues
+	 */
+	private ContentValues createCLContent( final int id, final String project,
+			final String subject, final long last_updated )
+	{
+		ContentValues values = new ContentValues();
+		values.put( CL_ID, id );
+		values.put( CL_PROJECT, project );
+		values.put( CL_SUBJECT, subject );
+		values.put( CL_LAST_UPDATED, last_updated );
+		return values;
+	}
 
-    /* END: FUNCTIONS FOR CHANGE LOG TABLE */
+	/**
+	 * Add Change log record into data base, overwrite on conflict
+	 * 
+	 * @param id
+	 * @param project
+	 * @param subject
+	 * @param last_updated
+	 * @return boolean
+	 */
+	public boolean addChangeLog( final int id, final String project, final String subject,
+			final long last_updated )
+	{
+		ContentValues initialValues = createCLContent( id, project, subject, last_updated );
+
+		// FIXME: need to make a decision of CONFLICT_IGNORE vs CONFLICT_REPLACE
+		long res = database.insertWithOnConflict( CL_TABLE, null, initialValues,
+				SQLiteDatabase.CONFLICT_REPLACE );
+		return ( res != -1 );
+	}
+
+	/* END: FUNCTIONS FOR CHANGE LOG TABLE */
+
+	/* FUNCTIONS FOR DOWNLOADS TABLE */
+	/**
+	 * Generate Downloads record for db
+	 * 
+	 * @param filename
+	 * @param type
+	 * @param md5sum
+	 * @param size
+	 * @param date_added
+	 * @return ContentValues
+	 */
+	private ContentValues createCMContent( final String filename, final String type,
+			final String md5sum, final String size, final long date_added )
+	{
+		ContentValues values = new ContentValues();
+		values.put( CM_FILENAME, filename );
+		values.put( CM_TYPE, type );
+		values.put( CM_MD5SUM, md5sum );
+		values.put( CM_SIZE, size );
+		values.put( CM_DATE, date_added );
+		return values;
+	}
+
+	/**
+	 * Add / replace downloads record into db
+	 * 
+	 * @param filename
+	 * @param type
+	 * @param md5sum
+	 * @param size
+	 * @param date_added
+	 * @return boolean
+	 */
+	public boolean addDownlods( final String filename, final String type, final String md5sum,
+			final String size, final long date_added )
+	{
+		ContentValues initialValues = createCMContent( filename, type, md5sum, size, date_added );
+
+		// FIXME: need to make a decision of CONFLICT_IGNORE vs CONFLICT_REPLACE
+		long res = database.insertWithOnConflict( CM_TABLE, null, initialValues,
+				SQLiteDatabase.CONFLICT_REPLACE );
+		return ( res != -1 );
+	}
+	/* END: FUNCTIONS FOR CHANGE LOG TABLE */
 }
