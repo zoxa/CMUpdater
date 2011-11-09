@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.SimpleTimeZone;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -244,10 +245,11 @@ public class CMChangelog implements Runnable
 		int res = 0;
 		// need to parse "2011-10-29 06:41:01.000000000"
 		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSSSSSSS" );
+		format.setTimeZone( new SimpleTimeZone( 0, "GMT" ) );
 		for ( int i = 0; i < json.length(); i++ )
 		{
 			JSONObject rec = json.getJSONObject( i );
-			Log.i( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
+			Log.d( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
 			long last_update;
 			try
 			{
@@ -273,7 +275,7 @@ public class CMChangelog implements Runnable
 
 	/* UPDATE Downloads list */
 	/**
-	 * Do HTTP call to pull html.table dom, and save this infomration into db
+	 * Do HTTP call to pull html.table dom, and save this information into db
 	 * 
 	 * @param data
 	 * @param na
@@ -381,6 +383,7 @@ public class CMChangelog implements Runnable
 		int res = 0, pos = 0, _pos = 0;
 		String td;
 		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
+		format.setTimeZone( new SimpleTimeZone( 0, "GMT" ) );
 
 		// find beginning of the table
 		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) )
