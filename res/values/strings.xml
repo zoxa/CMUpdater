@@ -4,6 +4,7 @@
     <string name="app_name">CM Updater</string>
     <string name="app_name_cmupman">CM Updater</string>
     <string name="menu_settings">Settings</string>
+    <string name="menu_refresh">Refresh</string>
 
     <!-- Preferences -->
     <string name="cur_device">Current Device</string>
@@ -14,8 +15,8 @@
     <string name="pref_device_loading">Loading list of supported devices</string>
     <!-- END: Preferences -->
 
-    <string name="btn_refresh">Refresh</string>
     <string name="msg_refreshing">Refresh started</string>
+    <string name="msg_refres_done">Refresh started</string>
 
     <!-- Error messages -->
     <string name="err_msg_http_fail">API is down</string>

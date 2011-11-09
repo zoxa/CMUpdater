@@ -12,9 +12,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,9 +36,6 @@ public class CMupdaterActivity extends Activity
 		TextView txt = (TextView) findViewById( R.id.txtInfo );
 		txt.setText( "DEVICE: " + Build.DEVICE + "\n" + "MODEL: " + Build.MODEL );
 		txt.setText( txt.getText() + "\n\nStored Device:" + device );
-
-		Button btn = (Button) findViewById( R.id.btnRefresh );
-		btn.setOnClickListener( new RefreshList() );
 	}
 
 	@Override
@@ -61,6 +55,13 @@ public class CMupdaterActivity extends Activity
 			case R.id.menu_pref:
 				startActivity( new Intent( this, CMUpdaterManager.class ) );
 				return true;
+			case R.id.menu_refresh:
+				Log.d( TAG, "Start refresh" );
+				CMChangelog clog = new CMChangelog( getApplicationContext(), device );
+				clog.refreshChangelog( new MenuRefreshHandler() );
+
+				Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
+						Toast.LENGTH_SHORT ).show();
 			default:
 				return super.onOptionsItemSelected( item );
 		}
@@ -76,20 +77,7 @@ public class CMupdaterActivity extends Activity
 		Log.d( TAG, device );
 	}
 
-	private class RefreshList implements OnClickListener
-	{
-		public void onClick( View v )
-		{
-			Log.d( TAG, "Start refresh" );
-			CMChangelog clog = new CMChangelog( getApplicationContext(), device );
-			clog.refreshChangelog( new ListHandler() );
-
-			Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
-					Toast.LENGTH_SHORT ).show();
-		}
-	}
-
-	private class ListHandler extends Handler
+	private class MenuRefreshHandler extends Handler
 	{
 		@Override
 		public void handleMessage( Message msg )
@@ -98,9 +86,8 @@ public class CMupdaterActivity extends Activity
 			int error = data.getInt( CMChangelog.MSG_DATA_KEY_ERROR, 0 );
 			if ( error == 0 )
 			{
-				TextView res = (TextView) findViewById( R.id.resJSON );
-				res.setText( String.format( "Updated records %d",
-						data.getInt( CMChangelog.MSG_JSON_COUNT, 0 ) ) );
+				Toast.makeText( getApplicationContext(), getString( R.string.msg_refres_done ),
+						Toast.LENGTH_LONG ).show();
 			}
 			else if ( CMChangelog.ERROR_CODE_HTTP_FAIL == error )
 			{
