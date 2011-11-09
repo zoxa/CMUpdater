@@ -3,7 +3,6 @@ package ca.zoxa.cyanogen.updater;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -12,15 +11,16 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class CMupdaterActivity extends Activity
 {
 	private String				device;
 
+	private static final int	PREFRENCES_ACTIVITY	= 1;
+
 	// Tag for the logs
-	private static final String	TAG	= "CMU";
+	private static final String	TAG					= "CMU";
 
 	/** Called when the activity is first created. */
 	@Override
@@ -32,10 +32,6 @@ public class CMupdaterActivity extends Activity
 
 		// Build.DEVICE: crespo
 		// Build.MODEL: Nexus S
-
-		TextView txt = (TextView) findViewById( R.id.txtInfo );
-		txt.setText( "DEVICE: " + Build.DEVICE + "\n" + "MODEL: " + Build.MODEL );
-		txt.setText( txt.getText() + "\n\nStored Device:" + device );
 	}
 
 	@Override
@@ -53,7 +49,8 @@ public class CMupdaterActivity extends Activity
 		switch ( item.getItemId() )
 		{
 			case R.id.menu_pref:
-				startActivity( new Intent( this, CMUpdaterManager.class ) );
+				startActivityForResult( new Intent( this, CMUpdaterManager.class ),
+						PREFRENCES_ACTIVITY );
 				return true;
 			case R.id.menu_refresh:
 				Log.d( TAG, "Start refresh" );
@@ -67,14 +64,23 @@ public class CMupdaterActivity extends Activity
 		}
 	}
 
+	@Override
+	protected void onActivityResult( int requestCode, int resultCode, Intent data )
+	{
+		if ( requestCode == PREFRENCES_ACTIVITY )
+		{
+			this.getPrefs();
+		}
+	}
+
 	/**
 	 * Load Default Shared preferences
 	 */
 	private void getPrefs()
 	{
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences( getBaseContext() );
-		device = prefs.getString( "device", "xz" );
-		Log.d( TAG, device );
+		device = prefs.getString( "device", "" );
+		Log.d( TAG, "Device: " + device );
 	}
 
 	private class MenuRefreshHandler extends Handler

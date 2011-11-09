@@ -60,6 +60,9 @@ public class NightliesAdapter
 	public void cleanup()
 	{
 		// TODO: Add cleanup logic here
+		// Each refresh will fill last 20 nightlies for downloads.
+		// Cleanup logic will be the following, delete any downloads more than 20 and all related
+		// changes
 	}
 
 	/* FUNCTIONS FOR CHANGE LOG TABLE */
@@ -97,7 +100,6 @@ public class NightliesAdapter
 	{
 		ContentValues initialValues = createCLContent( id, project, subject, last_updated );
 
-		// FIXME: need to make a decision of CONFLICT_IGNORE vs CONFLICT_REPLACE
 		long res = database.insertWithOnConflict( CL_TABLE, null, initialValues,
 				SQLiteDatabase.CONFLICT_REPLACE );
 		return ( res != -1 );
@@ -143,7 +145,6 @@ public class NightliesAdapter
 	{
 		ContentValues initialValues = createCMContent( filename, type, md5sum, size, date_added );
 
-		// FIXME: need to make a decision of CONFLICT_IGNORE vs CONFLICT_REPLACE
 		long res = database.insertWithOnConflict( CM_TABLE, null, initialValues,
 				SQLiteDatabase.CONFLICT_REPLACE );
 		return ( res != -1 );
