@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Toast;
 
 public class CMupdaterActivity extends Activity
@@ -22,16 +23,26 @@ public class CMupdaterActivity extends Activity
 	// Tag for the logs
 	private static final String	TAG					= "CMU";
 
+	// Build.DEVICE: crespo
+	// Build.MODEL: Nexus S
+
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate( Bundle savedInstanceState )
 	{
 		super.onCreate( savedInstanceState );
+
+		// Request progress bar
+		requestWindowFeature( Window.FEATURE_INDETERMINATE_PROGRESS );
+
 		setContentView( R.layout.main );
 		getPrefs();
 
-		// Build.DEVICE: crespo
-		// Build.MODEL: Nexus S
+		if ( device.isEmpty() )
+		{
+			// force device selection
+			startActivityForResult( new Intent( this, CMUpdaterManager.class ), PREFRENCES_ACTIVITY );
+		}
 	}
 
 	@Override
@@ -53,15 +64,21 @@ public class CMupdaterActivity extends Activity
 						PREFRENCES_ACTIVITY );
 				return true;
 			case R.id.menu_refresh:
-				Log.d( TAG, "Start refresh" );
-				CMChangelog clog = new CMChangelog( getApplicationContext(), device );
-				clog.refreshChangelog( new MenuRefreshHandler() );
-
-				Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
-						Toast.LENGTH_SHORT ).show();
+				menuCallRefresh();
 			default:
 				return super.onOptionsItemSelected( item );
 		}
+	}
+
+	private void menuCallRefresh()
+	{
+		Log.d( TAG, "Start refresh" );
+		setProgressBarIndeterminateVisibility( true );
+		CMChangelog clog = new CMChangelog( getApplicationContext(), device );
+		clog.refreshChangelog( new MenuRefreshHandler() );
+
+		Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
+				Toast.LENGTH_SHORT ).show();
 	}
 
 	@Override
@@ -69,7 +86,13 @@ public class CMupdaterActivity extends Activity
 	{
 		if ( requestCode == PREFRENCES_ACTIVITY )
 		{
+			String oldDevice = device;
 			this.getPrefs();
+			// device was changed, call refresh logic
+			if ( !device.equals( oldDevice ) )
+			{
+				menuCallRefresh();
+			}
 		}
 	}
 
@@ -115,6 +138,7 @@ public class CMupdaterActivity extends Activity
 				Toast.makeText( getApplicationContext(), getString( R.string.err_msg_db_open ),
 						Toast.LENGTH_LONG ).show();
 			}
+			setProgressBarIndeterminateVisibility( false );
 		}
 	}
 }
