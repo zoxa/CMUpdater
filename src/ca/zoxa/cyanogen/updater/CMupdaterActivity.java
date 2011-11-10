@@ -8,10 +8,18 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
+import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ExpandableListView.OnGroupClickListener;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class CMupdaterActivity extends Activity
@@ -22,6 +30,12 @@ public class CMupdaterActivity extends Activity
 
 	// Tag for the logs
 	private static final String	TAG					= "CMU";
+
+	//
+	private CMListAdapter		adapter;
+
+	// read only connection to db
+	private NightliesAdapter	na;
 
 	// Build.DEVICE: crespo
 	// Build.MODEL: Nexus S
@@ -36,13 +50,34 @@ public class CMupdaterActivity extends Activity
 		requestWindowFeature( Window.FEATURE_INDETERMINATE_PROGRESS );
 
 		setContentView( R.layout.main );
-		getPrefs();
 
+		getPrefs();
 		if ( device.isEmpty() )
 		{
 			// force device selection
 			startActivityForResult( new Intent( this, CMUpdaterManager.class ), PREFRENCES_ACTIVITY );
 		}
+
+		// Retrieve and bind list view
+		ExpandableListView listView = (ExpandableListView) findViewById( R.id.listView );
+		// click events
+		listView.setOnGroupClickListener( new GroupClickListener() );
+		listView.setOnChildClickListener( new ChildClickListener() );
+
+		// context menu
+		registerForContextMenu( listView );
+
+		// adapter
+		na = new NightliesAdapter( this );
+		na.read();
+		this.adapter = new CMListAdapter( getApplicationContext(), na.getDownloadsCursor(),
+				R.layout.downloads_row, new String[] { NightliesAdapter.CM_FILENAME,
+						NightliesAdapter.CM_SIZE, NightliesAdapter.CM_DATE }, new int[] {
+						R.id.dl_filename, R.id.dl_size, R.id.dl_date_added },
+				R.layout.changelog_row, new String[] { NightliesAdapter.CL_SUBJECT,
+						NightliesAdapter.CL_PROJECT },
+				new int[] { R.id.cl_subject, R.id.cl_project }, na );
+		listView.setAdapter( adapter );
 	}
 
 	@Override
@@ -141,4 +176,61 @@ public class CMupdaterActivity extends Activity
 			setProgressBarIndeterminateVisibility( false );
 		}
 	}
+
+	/* List View functions */
+	private class GroupClickListener implements OnGroupClickListener
+	{
+		public boolean onGroupClick( ExpandableListView parent, View v, int groupPosition, long id )
+		{
+			// TODO Auto-generated method stub
+			return false;
+		}
+	}
+
+	private class ChildClickListener implements OnChildClickListener
+	{
+		public boolean onChildClick( ExpandableListView parent, View v, int groupPosition,
+				int childPosition, long id )
+		{
+			// TODO Auto-generated method stub
+			return false;
+		}
+	}
+
+	@Override
+	public void onCreateContextMenu( ContextMenu menu, View v, ContextMenuInfo menuInfo )
+	{
+		Log.d( TAG, "onCreateContextMenu" );
+		menu.setHeaderTitle( "Sample menu" );
+		menu.add( 0, 0, 0, "Test" );
+	}
+
+	@Override
+	public boolean onContextItemSelected( MenuItem item )
+	{
+		Log.d( TAG, "onContextItemSelected" );
+		ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) item.getMenuInfo();
+
+		String title = ( (TextView) info.targetView ).getText().toString();
+
+		int type = ExpandableListView.getPackedPositionType( info.packedPosition );
+		if ( type == ExpandableListView.PACKED_POSITION_TYPE_CHILD )
+		{
+			int groupPos = ExpandableListView.getPackedPositionGroup( info.packedPosition );
+			int childPos = ExpandableListView.getPackedPositionChild( info.packedPosition );
+			Toast.makeText( this, title + ": Child " + childPos + " clicked in group " + groupPos,
+					Toast.LENGTH_SHORT ).show();
+			return true;
+		}
+		else if ( type == ExpandableListView.PACKED_POSITION_TYPE_GROUP )
+		{
+			int groupPos = ExpandableListView.getPackedPositionGroup( info.packedPosition );
+			Toast.makeText( this, title + ": Group " + groupPos + " clicked", Toast.LENGTH_SHORT )
+					.show();
+			return true;
+		}
+
+		return false;
+	}
+
 }

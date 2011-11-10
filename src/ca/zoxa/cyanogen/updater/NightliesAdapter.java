@@ -2,6 +2,7 @@ package ca.zoxa.cyanogen.updater;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -16,16 +17,24 @@ public class NightliesAdapter
 	public static String	CL_LAST_UPDATED	= "last_updated";
 	public static String	CL_SUBJECT		= "subject";
 
+	public static String[]	CL_FIELDS		= { CL_ID, CL_PROJECT, CL_LAST_UPDATED, CL_SUBJECT };
+
 	/**
 	 * Downloads table
 	 */
 	public static String	CM_TABLE		= "downloads";
-	public static String	CM_ID			= "_id";
 	public static String	CM_TYPE			= "type";
 	public static String	CM_FILENAME		= "filename";
 	public static String	CM_MD5SUM		= "md5sum";
 	public static String	CM_SIZE			= "size";
 	public static String	CM_DATE			= "date_added";
+
+	public static String[]	CM_FIELDS		= { CM_TYPE, CM_FILENAME, CM_MD5SUM, CM_SIZE, CM_DATE };
+
+	/**
+	 * Limits
+	 */
+	private final int		CM_LIMITS		= 20;
 
 	/**
 	 * Private properties
@@ -49,6 +58,13 @@ public class NightliesAdapter
 	{
 		dbHelper = new CMDBHandler( context );
 		database = dbHelper.getWritableDatabase();
+		return this;
+	}
+
+	public NightliesAdapter read() throws SQLException
+	{
+		dbHelper = new CMDBHandler( context );
+		database = dbHelper.getReadableDatabase();
 		return this;
 	}
 
@@ -149,5 +165,17 @@ public class NightliesAdapter
 				SQLiteDatabase.CONFLICT_REPLACE );
 		return ( res != -1 );
 	}
+
 	/* END: FUNCTIONS FOR CHANGE LOG TABLE */
+
+	/**
+	 * Get Downloads Cursor
+	 * 
+	 * @return
+	 */
+	public Cursor getDownloadsCursor()
+	{
+		return database.query( CM_TABLE, CM_FIELDS, null, null, null, null, CM_FILENAME + " ASC",
+				String.valueOf( CM_LIMITS ) );
+	}
 }

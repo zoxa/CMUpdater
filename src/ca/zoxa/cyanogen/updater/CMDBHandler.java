@@ -68,6 +68,8 @@ public class CMDBHandler extends SQLiteOpenHelper
 				+ NightliesAdapter.CM_DATE + " INTEGER)";
 
 		sqLiteDatabase.execSQL( sql );
+
+		// add as first placeholder with highest possible id
 	}
 
 	/*

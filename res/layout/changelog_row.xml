@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/changelog_layout"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="#333333"
+    android:orientation="horizontal" >
+
+    <TextView
+        android:id="@+id/cl_subject"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="30dp"
+        android:text="Clean sysfs stats on cpufreq_stats unload"
+        android:textSize="15dp"
+        android:textStyle="normal" />
+
+    <TextView
+        android:id="@+id/cl_project"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/cl_subject"
+        android:layout_marginLeft="30dp"
+        android:text="(samsung-kernel-crespo)"
+        android:textSize="15dp"
+        android:textStyle="normal" />
+
+</RelativeLayout>
