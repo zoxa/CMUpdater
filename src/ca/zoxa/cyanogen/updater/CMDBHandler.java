@@ -62,14 +62,10 @@ public class CMDBHandler extends SQLiteOpenHelper
 		sqLiteDatabase.execSQL( sql );
 
 		// create downloads table
-		sql = "CREATE TABLE " + NightliesAdapter.CM_TABLE + " (" + NightliesAdapter.CM_FILENAME
+		sql = "CREATE TABLE " + NightliesAdapter.CM_TABLE + " ( " + NightliesAdapter.CM_FILENAME
 				+ " TEXT PRIMARY KEY, " + NightliesAdapter.CM_TYPE + " TEXT, "
 				+ NightliesAdapter.CM_MD5SUM + " TEXT, " + NightliesAdapter.CM_SIZE + " TEXT, "
 				+ NightliesAdapter.CM_DATE + " INTEGER)";
-
-		sqLiteDatabase.execSQL( sql );
-
-		// add as first placeholder with highest possible id
 	}
 
 	/*

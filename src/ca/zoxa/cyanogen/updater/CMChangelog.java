@@ -242,7 +242,7 @@ public class CMChangelog implements Runnable
 	 */
 	private int saveChangeLog( NightliesAdapter na, JSONArray json ) throws JSONException
 	{
-		int res = 0;
+		int count_new = 0;
 		// need to parse "2011-10-29 06:41:01.000000000"
 		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSSSSSSS" );
 		format.setTimeZone( new SimpleTimeZone( 0, "GMT" ) );
@@ -258,17 +258,19 @@ public class CMChangelog implements Runnable
 			}
 			catch ( ParseException e )
 			{
-				Log.d( TAG, "Exception: " + e.getMessage() );
+				Log.e( TAG,
+						"Parse fail on " + rec.getString( "last_updated" ) + " " + e.getMessage(),
+						e );
 				last_update = 0;
 			}
 			if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ),
 					rec.getString( "subject" ), last_update ) )
 			{
-				res++;
+				count_new++;
 				Log.i( TAG, "Record Saved to DB" );
 			}
 		}
-		return res;
+		return count_new;
 	}
 
 	/* END: UPDATE JSON change log */
@@ -380,14 +382,14 @@ public class CMChangelog implements Runnable
 	 */
 	private int saveDownloads( NightliesAdapter na, String table )
 	{
-		int res = 0, pos = 0, _pos = 0;
+		int count_new = 0, pos = 0, _pos = 0, count = 0;
 		String td;
 		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 		format.setTimeZone( new SimpleTimeZone( 0, "GMT" ) );
 
 		// FIXME: may be use this? http://www.odi.ch/prog/design/newbies.php#5
-		// find beginning of the table
-		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) )
+		// find beginning of the table and process only {NightliesAdapter.CM_LIMITS} records
+		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) && count < NightliesAdapter.CM_LIMITS )
 		{
 			Log.d( TAG, "Found <tr> at " + pos );
 			try
@@ -437,22 +439,23 @@ public class CMChangelog implements Runnable
 					}
 				}
 
-				Log.i( TAG, "Record: type " + type + " filename " + filename );
-				Log.i( TAG, " md5sum " + md5sum + " size " + size );
-				Log.i( TAG, " Date " + date_added.toString() );
+				Log.d( TAG, "Record: type " + type + " filename " + filename );
+				Log.d( TAG, " md5sum " + md5sum + " size " + size );
+				Log.d( TAG, " Date " + date_added.toString() );
 				// we have all the data now, lets try to save it
 				if ( na.addDownlods( filename, type, md5sum, size, date_added.getTime() ) )
 				{
-					res++;
+					count_new++;
 					Log.i( TAG, "Record Saved to DB" );
 				}
+				count++;
 			}
 			catch ( ParseException e )
 			{
-				Log.e( TAG, "ParseException", e );
+				Log.e( TAG, "Parse fail " + e.getMessage(), e );
 			}
 		}
-		return res;
+		return count_new;
 	}
 
 	/* END: UPDATE Downloads list */

@@ -12,7 +12,7 @@ public class NightliesAdapter
 	 * Change log table
 	 */
 	public static String	CL_TABLE		= "clog";
-	public static String	CL_ID			= "id";
+	public static String	CL_ID			= "_id";
 	public static String	CL_PROJECT		= "project";
 	public static String	CL_SUBJECT		= "subject";
 	public static String	CL_LAST_UPDATED	= "last_updated";
@@ -34,7 +34,7 @@ public class NightliesAdapter
 	/**
 	 * Limits
 	 */
-	private final int		CM_LIMITS		= 10;
+	public final static int	CM_LIMITS		= 10;
 
 	/**
 	 * Private properties
@@ -109,17 +109,16 @@ public class NightliesAdapter
 	 * @param project
 	 * @param subject
 	 * @param last_updated
-	 * @return boolean
+	 * @return boolean true on new insertion
 	 */
 	public boolean addChangeLog( final int id, final String project, final String subject,
 			final long last_updated )
 	{
 		ContentValues initialValues = createCLContent( id, project, subject, last_updated );
 
-		// FIXME: change to return insert or update
-		long res = database.insertWithOnConflict( CL_TABLE, null, initialValues,
-				SQLiteDatabase.CONFLICT_REPLACE );
-		return ( res != -1 );
+		long last_inserted_id = database.insertWithOnConflict( CL_TABLE, null, initialValues,
+				SQLiteDatabase.CONFLICT_IGNORE );
+		return ( last_inserted_id == id );
 	}
 
 	/* END: FUNCTIONS FOR CHANGE LOG TABLE */
@@ -155,17 +154,24 @@ public class NightliesAdapter
 	 * @param md5sum
 	 * @param size
 	 * @param date_added
-	 * @return boolean
+	 * @return boolean true on new insertion
 	 */
 	public boolean addDownlods( final String filename, final String type, final String md5sum,
 			final String size, final long date_added )
 	{
 		ContentValues initialValues = createCMContent( filename, type, md5sum, size, date_added );
 
-		// FIXME: change to return insert or update
-		long res = database.insertWithOnConflict( CM_TABLE, null, initialValues,
-				SQLiteDatabase.CONFLICT_REPLACE );
-		return ( res != -1 );
+		long inserted_id;
+		try
+		{
+			inserted_id = database.insertOrThrow( CM_TABLE, null, initialValues );
+		}
+		catch ( SQLException e )
+		{
+			// duplicate record
+			inserted_id = -1;
+		}
+		return ( inserted_id != -1 );
 	}
 
 	/* END: FUNCTIONS FOR CHANGE LOG TABLE */

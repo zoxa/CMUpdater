@@ -16,7 +16,7 @@
     <!-- END: Preferences -->
 
     <string name="msg_refreshing">Refresh started</string>
-    <string name="msg_refres_done">Refresh started</string>
+    <string name="msg_refres_done" formatted="false">Refresh done:\nDownloads: %d Changes: %d</string>
 
     <!-- Error messages -->
     <string name="err_msg_http_fail">API is down</string>

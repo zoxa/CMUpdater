@@ -64,8 +64,9 @@ public class CMupdaterActivity extends Activity
 		// context menu
 		registerForContextMenu( listView );
 
-		this.adapter = new CMListAdapter( this );
-		listView.setAdapter( adapter );
+		// FIXME: failing when no db. need to catch exception
+		// this.adapter = new CMListAdapter( this );
+		// listView.setAdapter( adapter );
 	}
 
 	@Override
@@ -96,12 +97,12 @@ public class CMupdaterActivity extends Activity
 	private void menuCallRefresh()
 	{
 		Log.d( TAG, "Start refresh" );
+		Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
+				Toast.LENGTH_SHORT ).show();
+
 		setProgressBarIndeterminateVisibility( true );
 		CMChangelog clog = new CMChangelog( getApplicationContext(), device );
 		clog.refreshChangelog( new MenuRefreshHandler() );
-
-		Toast.makeText( getApplicationContext(), getString( R.string.msg_refreshing ),
-				Toast.LENGTH_SHORT ).show();
 	}
 
 	@Override
@@ -138,8 +139,12 @@ public class CMupdaterActivity extends Activity
 			int error = data.getInt( CMChangelog.MSG_DATA_KEY_ERROR, 0 );
 			if ( error == 0 )
 			{
-				Toast.makeText( getApplicationContext(), getString( R.string.msg_refres_done ),
-						Toast.LENGTH_LONG ).show();
+				Toast.makeText(
+						getApplicationContext(),
+						getString( R.string.msg_refres_done,
+								data.getInt( CMChangelog.MSG_DOWNLOADS_COUNT, 0 ),
+								data.getInt( CMChangelog.MSG_JSON_COUNT, 0 ) ), Toast.LENGTH_LONG )
+						.show();
 			}
 			else if ( CMChangelog.ERROR_CODE_HTTP_FAIL == error )
 			{
