@@ -34,9 +34,6 @@ public class CMupdaterActivity extends Activity
 	//
 	private CMListAdapter		adapter;
 
-	// read only connection to db
-	private NightliesAdapter	na;
-
 	// Build.DEVICE: crespo
 	// Build.MODEL: Nexus S
 
@@ -67,16 +64,7 @@ public class CMupdaterActivity extends Activity
 		// context menu
 		registerForContextMenu( listView );
 
-		// adapter
-		na = new NightliesAdapter( this );
-		na.read();
-		this.adapter = new CMListAdapter( getApplicationContext(), na.getDownloadsCursor(),
-				R.layout.downloads_row, new String[] { NightliesAdapter.CM_FILENAME,
-						NightliesAdapter.CM_SIZE, NightliesAdapter.CM_DATE }, new int[] {
-						R.id.dl_filename, R.id.dl_size, R.id.dl_date_added },
-				R.layout.changelog_row, new String[] { NightliesAdapter.CL_SUBJECT,
-						NightliesAdapter.CL_PROJECT },
-				new int[] { R.id.cl_subject, R.id.cl_project }, na );
+		this.adapter = new CMListAdapter( this );
 		listView.setAdapter( adapter );
 	}
 

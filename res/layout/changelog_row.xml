@@ -3,15 +3,13 @@
     android:id="@+id/changelog_layout"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:background="#333333"
     android:orientation="horizontal" >
 
     <TextView
         android:id="@+id/cl_subject"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="30dp"
-        android:text="Clean sysfs stats on cpufreq_stats unload"
+        android:text=""
         android:textSize="15dp"
         android:textStyle="normal" />
 
@@ -21,8 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_below="@id/cl_subject"
-        android:layout_marginLeft="30dp"
-        android:text="(samsung-kernel-crespo)"
+        android:text=""
         android:textSize="15dp"
         android:textStyle="normal" />
 

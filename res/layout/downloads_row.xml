@@ -1,17 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/downloads_layout"
     android:layout_width="fill_parent"
-    android:layout_height="45dp"
-    android:background="#333333"
-    android:orientation="horizontal" >
+    android:layout_height="45dp" >
 
     <TextView
         android:id="@+id/dl_filename"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="30dp"
-        android:text="cm_crespo_full-252.zip "
+        android:layout_marginLeft="35dp"
+        android:text=" "
         android:textSize="20dp"
         android:textStyle="normal" />
 
@@ -20,8 +17,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/dl_filename"
-        android:layout_marginLeft="30dp"
-        android:text="2011-11-10 14:10:37 "
+        android:layout_marginLeft="35dp"
+        android:text=""
         android:textSize="15dp"
         android:textStyle="normal" />
 
@@ -32,7 +29,7 @@
         android:layout_alignBaseline="@+id/dl_filename"
         android:layout_alignParentRight="true"
         android:gravity="bottom|right"
-        android:text="88.19 MB "
+        android:text=""
         android:textSize="15dp"
         android:textStyle="normal" />
 

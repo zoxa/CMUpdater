@@ -318,7 +318,7 @@ public class CMChangelog implements Runnable
 			data.putString( MSG_DATA_KEY_ERROR_MSG, e.getMessage() );
 		}
 
-		if ( table != null && table.length() > 0 )
+		if ( table != null && !table.isEmpty() )
 		{
 			// writ to DB
 			int result = saveDownloads( na, table );
@@ -385,6 +385,7 @@ public class CMChangelog implements Runnable
 		SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 		format.setTimeZone( new SimpleTimeZone( 0, "GMT" ) );
 
+		// FIXME: may be use this? http://www.odi.ch/prog/design/newbies.php#5
 		// find beginning of the table
 		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) )
 		{

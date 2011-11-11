@@ -14,10 +14,10 @@ public class NightliesAdapter
 	public static String	CL_TABLE		= "clog";
 	public static String	CL_ID			= "id";
 	public static String	CL_PROJECT		= "project";
-	public static String	CL_LAST_UPDATED	= "last_updated";
 	public static String	CL_SUBJECT		= "subject";
+	public static String	CL_LAST_UPDATED	= "last_updated";
 
-	public static String[]	CL_FIELDS		= { CL_ID, CL_PROJECT, CL_LAST_UPDATED, CL_SUBJECT };
+	public static String[]	CL_FIELDS		= { CL_ID, CL_PROJECT, CL_SUBJECT, CL_LAST_UPDATED };
 
 	/**
 	 * Downloads table
@@ -34,7 +34,7 @@ public class NightliesAdapter
 	/**
 	 * Limits
 	 */
-	private final int		CM_LIMITS		= 20;
+	private final int		CM_LIMITS		= 10;
 
 	/**
 	 * Private properties
@@ -116,6 +116,7 @@ public class NightliesAdapter
 	{
 		ContentValues initialValues = createCLContent( id, project, subject, last_updated );
 
+		// FIXME: change to return insert or update
 		long res = database.insertWithOnConflict( CL_TABLE, null, initialValues,
 				SQLiteDatabase.CONFLICT_REPLACE );
 		return ( res != -1 );
@@ -161,6 +162,7 @@ public class NightliesAdapter
 	{
 		ContentValues initialValues = createCMContent( filename, type, md5sum, size, date_added );
 
+		// FIXME: change to return insert or update
 		long res = database.insertWithOnConflict( CM_TABLE, null, initialValues,
 				SQLiteDatabase.CONFLICT_REPLACE );
 		return ( res != -1 );
@@ -175,7 +177,19 @@ public class NightliesAdapter
 	 */
 	public Cursor getDownloadsCursor()
 	{
-		return database.query( CM_TABLE, CM_FIELDS, null, null, null, null, CM_FILENAME + " ASC",
+		return database.query( CM_TABLE, CM_FIELDS, null, null, null, null, CM_FILENAME + " DESC",
 				String.valueOf( CM_LIMITS ) );
+	}
+
+	/**
+	 * Get Change Log Cursor
+	 * 
+	 * @return
+	 */
+	public Cursor getChangeLogCursor( long dateFrom, long dateTo )
+	{
+		return database.query( CL_TABLE, CL_FIELDS, CL_LAST_UPDATED + " BETWEEN ? AND ?",
+				new String[] { String.valueOf( dateFrom ), String.valueOf( dateTo ) }, null, null,
+				CL_LAST_UPDATED + " DESC" );
 	}
 }
