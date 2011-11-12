@@ -1,21 +1,21 @@
 One day I became lazy of checking changes done and builds of nightlies of my lovely ROM - CyanogenMod
 Thus I decided to write my own app that will do the dirty work for me:
 
-This app for first release will do the following:
+This application for first release will do the following:
 
 1. Gather information about:
  a. Changes done to the trunks of CyanogenMod project 
  b. Watch results of BuildBot and gather the all latest builds
 2. Have a Service that will run and notify user about changes has been done number of them and new builds
-3. Hightlight differenty the builds and changes with colors to show their "status" and type
+3. Highlight different the builds and changes with colors to show their "status" and type
 4. Take you to the commits details (over website)
-5. Ideally download zip files into user prefered folder:
- - This choice is done, because CyanogenMod comes with Rom Manager preinstalled which can flush the ROM for you
+5. Ideally download zip files into user preferred folder:
+ - This choice is done, because CyanogenMod comes with Rom Manager pre-installed which can flush the ROM for you
 
 Wish to have
 
 *. Wish to have (need to check license and terms of Rom Manager) ability to flush ROM right from my app using Rom Managers scripts (This will require root permissions - 100%)
-*. Take git diff from commits directly and display them nicelly in the app 
+*. Take git diff from commits directly and display them nicely in the appl 
 
 
-P.S. This is my first serios app and I will try to do my best on creating it. 
+P.S. This is my first serious app and I will try to do my best on creating it. 
