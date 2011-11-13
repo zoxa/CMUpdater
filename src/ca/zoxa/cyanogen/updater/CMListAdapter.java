@@ -4,6 +4,8 @@ import java.util.Date;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
+import android.database.SQLException;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,21 +30,18 @@ public class CMListAdapter extends BaseExpandableListAdapter
 
 	public ChangeLogRecord getChild( int downloadPosition, int changelogPostion )
 	{
-		Log.d( TAG, "getChild" );
 		return ( downloadPosition < downloads.length && changelogPostion < changelogs[downloadPosition].length ) ? changelogs[downloadPosition][changelogPostion]
 				: new ChangeLogRecord();
 	}
 
 	public long getChildId( int downloadPosition, int changelogPostion )
 	{
-		Log.d( TAG, "getChildId" );
 		return downloadPosition * 1000 + changelogPostion;
 	}
 
 	public View getChildView( int downloadPosition, int changelogPostion, boolean isLastChild,
 			View convertView, ViewGroup parent )
 	{
-		Log.d( TAG, "getChildView" );
 		if ( convertView == null )
 		{
 			LayoutInflater infalInflater = (LayoutInflater) context
@@ -67,33 +66,28 @@ public class CMListAdapter extends BaseExpandableListAdapter
 
 	public int getChildrenCount( int downloadPosition )
 	{
-		Log.d( TAG, "getChildrenCount" );
 		return ( downloadPosition < downloads.length ) ? changelogs[downloadPosition].length : 0;
 	}
 
 	public DownloadsRecord getGroup( int downloadPosition )
 	{
-		Log.d( TAG, "getGroup" );
 		return downloadPosition < downloads.length ? downloads[downloadPosition]
 				: new DownloadsRecord();
 	}
 
 	public int getGroupCount()
 	{
-		Log.d( TAG, "getGroupCount" );
 		return downloads.length;
 	}
 
 	public long getGroupId( int downloadPosition )
 	{
-		Log.d( TAG, "getGroupId" );
 		return downloadPosition;
 	}
 
 	public View getGroupView( int downloadPosition, boolean isExpanded, View convertView,
 			ViewGroup parent )
 	{
-		Log.d( TAG, "getGroupView" );
 		if ( convertView == null )
 		{
 			LayoutInflater infalInflater = (LayoutInflater) context
@@ -114,22 +108,21 @@ public class CMListAdapter extends BaseExpandableListAdapter
 			date.setText( dr.date_added.toLocaleString() );
 		}
 
-		// XXX: add a check here if this installed / downloaded
+		// XXX: add a check here if this installed / downloaded + include colors for types
 
 		return convertView;
 	}
 
 	public boolean hasStableIds()
 	{
+		// TODO Auto-generated method stub
 		Log.d( TAG, "hasStableIds" );
-		return false;
+		return true;
 	}
 
 	public boolean isChildSelectable( int downloadPosition, int changelogPostion )
 	{
-		Log.d( TAG, "isChildSelectable" );
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	/**
@@ -138,42 +131,131 @@ public class CMListAdapter extends BaseExpandableListAdapter
 	private void fillData()
 	{
 		NightliesAdapter na = new NightliesAdapter( context );
-		na.read();
+		try
+		{
+			na.read();
 
-		// get Downloads
-		Cursor cur_dl = na.getDownloadsCursor();
-		cur_dl.moveToFirst();
+			// get Downloads
+			Cursor cur_dl = na.getDownloadsCursor();
+			cur_dl.moveToFirst();
 
-		// we will start db records from 1: 0 reserved for our custom record
-		int count_dl = cur_dl.getCount() + 1;
-		downloads = new DownloadsRecord[count_dl];
-		changelogs = new ChangeLogRecord[count_dl][];
+			// we will start db records from 1: 0 reserved for our custom record
+			int count_dl = cur_dl.getCount() + 1;
+			if ( count_dl > 1 )
+			{
+				downloads = new DownloadsRecord[count_dl];
+				changelogs = new ChangeLogRecord[count_dl][];
 
-		Log.d( TAG, "downloads count " + count_dl );
+				DownloadsRecord dr;
+				long dateTo = ( new Date() ).getTime();
+				long dateFrom = cur_dl.getLong( cur_dl.getColumnIndex( NightliesAdapter.CM_DATE ) );
 
-		DownloadsRecord dr;
+				// empty first record
+				dr = new DownloadsRecord();
+				dr.filename = "next nightly";
+				dr.type = "nightly";
+				dr.size = "";
+				dr.md5sum = "";
+				dr.date_added = new Date();
+				downloads[0] = dr;
+
+				// get change log data
+				changelogs[0] = fillChangeLogData( na, dateFrom, dateTo );
+
+				for ( int i = 1; i < count_dl && !cur_dl.isAfterLast(); i++ )
+				{
+					dr = new DownloadsRecord();
+					dr.filename = cur_dl.getString( cur_dl
+							.getColumnIndex( NightliesAdapter.CM_FILENAME ) );
+					dr.type = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_TYPE ) );
+					dr.md5sum = cur_dl.getString( cur_dl
+							.getColumnIndex( NightliesAdapter.CM_MD5SUM ) );
+					dr.size = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_SIZE ) );
+					dateFrom = cur_dl.getLong( cur_dl.getColumnIndex( NightliesAdapter.CM_DATE ) );
+					dr.date_added = new Date( dateFrom );
+					downloads[i] = dr;
+
+					// get change log data
+					changelogs[i] = fillChangeLogData( na, dateFrom, dateTo );
+
+					dateTo = dateFrom;
+					cur_dl.moveToNext();
+				}
+			}
+			else
+			{
+				downloads = new DownloadsRecord[1];
+				changelogs = new ChangeLogRecord[1][0];
+
+				// no records found
+				DownloadsRecord dr = new DownloadsRecord();
+				dr.filename = "No Records found, please refresh";
+				dr.type = "nightly";
+				dr.size = "";
+				dr.md5sum = "";
+				dr.date_added = null;
+				downloads[0] = dr;
+			}
+		}
+		catch ( SQLException e )
+		{
+			// data base does not exist or cannot be opened for read
+			downloads = new DownloadsRecord[1];
+			changelogs = new ChangeLogRecord[1][0];
+
+			// no records found
+			DownloadsRecord dr = new DownloadsRecord();
+			dr.filename = "Problem with DB, please refresh";
+			dr.type = "nightly";
+			dr.size = "";
+			dr.md5sum = "";
+			dr.date_added = null;
+			downloads[0] = dr;
+
+			Log.e( TAG, "DB Fail", e );
+		}
+		catch ( CursorIndexOutOfBoundsException e )
+		{
+			downloads = new DownloadsRecord[1];
+			changelogs = new ChangeLogRecord[1][0];
+
+			// no records found
+			DownloadsRecord dr = new DownloadsRecord();
+			dr.filename = "Problem with DB, please refresh";
+			dr.type = "nightly";
+			dr.size = "";
+			dr.md5sum = "";
+			dr.date_added = null;
+			downloads[0] = dr;
+
+			Log.e( TAG, "DB Fail", e );
+		}
+		finally
+		{
+			if ( na != null )
+			{
+				na.close();
+			}
+		}
+	}
+
+	/**
+	 * Get Change Log records from DB and form nice array set
+	 * 
+	 * @param na
+	 *            database connection
+	 * @param dateFrom
+	 *            start date for changes
+	 * @param dateTo
+	 *            end date for changes
+	 * @return array of change log records
+	 */
+	private ChangeLogRecord[] fillChangeLogData( NightliesAdapter na, long dateFrom, long dateTo )
+	{
+		Cursor cur_cl = na.getChangeLogCursor( dateFrom, dateTo );
+		int count_cl = cur_cl.getCount();
 		ChangeLogRecord cl;
-		Cursor cur_cl;
-		int count_cl;
-		long dateTo = ( new Date() ).getTime();
-		long dateFrom = cur_dl.getLong( cur_dl.getColumnIndex( NightliesAdapter.CM_DATE ) );
-
-		// empty first record
-		dr = new DownloadsRecord();
-		dr.filename = "next nightly";
-		dr.type = "nightly";
-		dr.size = "";
-		dr.md5sum = "";
-		dr.date_added = new Date();
-		downloads[0] = dr;
-
-		// get change log data
-		cur_cl = na.getChangeLogCursor( dateFrom, dateTo );
-		count_cl = cur_cl.getCount();
-
-		Log.d( TAG, "changelog count " + count_cl );
-
-		changelogs[0] = new ChangeLogRecord[count_cl];
+		ChangeLogRecord[] changelogs = new ChangeLogRecord[count_cl];
 		for ( int k = 0; k < count_cl && cur_cl.moveToNext(); k++ )
 		{
 			cl = new ChangeLogRecord();
@@ -182,48 +264,17 @@ public class CMListAdapter extends BaseExpandableListAdapter
 			cl.subject = cur_cl.getString( cur_cl.getColumnIndex( NightliesAdapter.CL_SUBJECT ) );
 			cl.last_updated = new Date( cur_cl.getLong( cur_cl
 					.getColumnIndex( NightliesAdapter.CL_LAST_UPDATED ) ) );
-			changelogs[0][k] = cl;
+			changelogs[k] = cl;
 		}
+		return changelogs;
+	}
 
-		Log.d( TAG, "cPos:" + cur_dl.getPosition() );
-		for ( int i = 1; i < count_dl && !cur_dl.isAfterLast(); i++ )
-		{
-			Log.i( "CAdapter", "i: " + i + " cPos:" + cur_dl.getPosition() );
-			dr = new DownloadsRecord();
-			dr.filename = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_FILENAME ) );
-			dr.type = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_TYPE ) );
-			dr.md5sum = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_MD5SUM ) );
-			dr.size = cur_dl.getString( cur_dl.getColumnIndex( NightliesAdapter.CM_SIZE ) );
-			dateFrom = cur_dl.getLong( cur_dl.getColumnIndex( NightliesAdapter.CM_DATE ) );
-			dr.date_added = new Date( dateFrom );
-			downloads[i] = dr;
-
-			// get change log data
-			cur_cl = na.getChangeLogCursor( dateFrom, dateTo );
-			count_cl = cur_cl.getCount();
-			cur_cl.moveToFirst();
-
-			Log.d( TAG, "changelog count " + count_cl );
-
-			changelogs[i] = new ChangeLogRecord[count_cl];
-			for ( int k = 0; k < count_cl && !cur_cl.isAfterLast(); k++ )
-			{
-				cl = new ChangeLogRecord();
-				cl.id = cur_cl.getInt( cur_cl.getColumnIndex( NightliesAdapter.CL_ID ) );
-				cl.project = cur_cl
-						.getString( cur_cl.getColumnIndex( NightliesAdapter.CL_PROJECT ) );
-				cl.subject = cur_cl
-						.getString( cur_cl.getColumnIndex( NightliesAdapter.CL_SUBJECT ) );
-				cl.last_updated = new Date( cur_cl.getLong( cur_cl
-						.getColumnIndex( NightliesAdapter.CL_LAST_UPDATED ) ) );
-				changelogs[i][k] = cl;
-				cur_cl.moveToNext();
-			}
-			dateTo = dateFrom;
-			cur_dl.moveToNext();
-		}
-
-		na.close();
+	@Override
+	public void notifyDataSetChanged()
+	{
+		Log.i( TAG, "refresh data set called" );
+		fillData();
+		super.notifyDataSetChanged();
 	}
 
 	/**

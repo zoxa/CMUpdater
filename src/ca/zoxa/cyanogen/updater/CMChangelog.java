@@ -174,7 +174,7 @@ public class CMChangelog implements Runnable
 			{
 				int result = saveChangeLog( na, json );
 				data.putInt( MSG_JSON_COUNT, result );
-				Log.i( TAG, "Records Updated: " + result );
+				Log.i( TAG, "Change Log Updated: " + result );
 			}
 			catch ( JSONException e )
 			{
@@ -216,14 +216,10 @@ public class CMChangelog implements Runnable
 			InputStream instream = entity.getContent();
 			String result = CMChangelog.convertStreamToString( instream );
 			instream.close();
-			Log.i( TAG, "--- Result.length: [" + result.length() + "]" );
 
 			if ( result.length() > 0 )
 			{
-				Log.i( TAG, "Start JSON Parsing..." );
-				JSONArray json = new JSONArray( result );
-				Log.i( TAG, "JSON Parsed..." );
-				return json;
+				return new JSONArray( result );
 			}
 		}
 
@@ -249,7 +245,6 @@ public class CMChangelog implements Runnable
 		for ( int i = 0; i < json.length(); i++ )
 		{
 			JSONObject rec = json.getJSONObject( i );
-			Log.d( TAG, "Processing JSON Object: " + rec.toString( 2 ) );
 			long last_update;
 			try
 			{
@@ -258,16 +253,14 @@ public class CMChangelog implements Runnable
 			}
 			catch ( ParseException e )
 			{
-				Log.e( TAG,
-						"Parse fail on " + rec.getString( "last_updated" ) + " " + e.getMessage(),
-						e );
+				Log.e( TAG, "Parse fail on " + rec.getString( "last_updated" ) + " "
+						+ e.getMessage(), e );
 				last_update = 0;
 			}
-			if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ),
-					rec.getString( "subject" ), last_update ) )
+			if ( na.addChangeLog( rec.getInt( "id" ), rec.getString( "project" ), rec
+					.getString( "subject" ), last_update ) )
 			{
 				count_new++;
-				Log.i( TAG, "Record Saved to DB" );
 			}
 		}
 		return count_new;
@@ -325,7 +318,7 @@ public class CMChangelog implements Runnable
 			// writ to DB
 			int result = saveDownloads( na, table );
 			data.putInt( MSG_DOWNLOADS_COUNT, result );
-			Log.i( TAG, "Records Updated: " + result );
+			Log.i( TAG, "Downloads Updated: " + result );
 		}
 
 		return data;
@@ -360,14 +353,11 @@ public class CMChangelog implements Runnable
 			InputStream instream = entity.getContent();
 			String result = CMChangelog.convertStreamToString( instream );
 			instream.close();
-			Log.d( TAG, "--- Result.length: [" + result.length() + "]" );
 
 			// get table from result
 			int table_start = result.indexOf( "<table" );
 			int table_end = result.indexOf( ">", result.indexOf( "</table>", table_start ) );
-			result = result.substring( table_start, table_end );
-			Log.d( TAG, "--- Table.length: [" + result.length() + "]" );
-			return result;
+			return result.substring( table_start, table_end );
 		}
 
 		return null;
@@ -391,7 +381,6 @@ public class CMChangelog implements Runnable
 		// find beginning of the table and process only {NightliesAdapter.CM_LIMITS} records
 		while ( -1 != ( pos = table.indexOf( "<tr>", pos ) ) && count < NightliesAdapter.CM_LIMITS )
 		{
-			Log.d( TAG, "Found <tr> at " + pos );
 			try
 			{
 				String type = null, filename = null, md5sum = null, size = null;
@@ -402,9 +391,7 @@ public class CMChangelog implements Runnable
 				for ( int i = 0; i < 5; i++ )
 				{
 					pos = table.indexOf( "<td>", pos ) + 4;
-					Log.d( TAG, "Found <td> at " + pos );
 					td = table.substring( pos, ( pos = table.indexOf( "</td>", pos ) ) );
-					Log.d( TAG, "Got td " + td );
 
 					// each td has its own parse rulez
 					switch ( i )
@@ -439,14 +426,10 @@ public class CMChangelog implements Runnable
 					}
 				}
 
-				Log.d( TAG, "Record: type " + type + " filename " + filename );
-				Log.d( TAG, " md5sum " + md5sum + " size " + size );
-				Log.d( TAG, " Date " + date_added.toString() );
 				// we have all the data now, lets try to save it
 				if ( na.addDownlods( filename, type, md5sum, size, date_added.getTime() ) )
 				{
 					count_new++;
-					Log.i( TAG, "Record Saved to DB" );
 				}
 				count++;
 			}
@@ -483,7 +466,7 @@ public class CMChangelog implements Runnable
 		}
 		catch ( IOException e )
 		{
-			Log.d( TAG, "Exception: " + e.getMessage() );
+			Log.e( TAG, "Exception: " + e.getMessage() );
 		}
 		finally
 		{
@@ -493,7 +476,7 @@ public class CMChangelog implements Runnable
 			}
 			catch ( IOException e )
 			{
-				Log.d( TAG, "Exception: " + e.getMessage() );
+				Log.e( TAG, "Exception: " + e.getMessage() );
 			}
 		}
 		return sb.toString();

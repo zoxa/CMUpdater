@@ -161,6 +161,7 @@ public class NightliesAdapter
 	{
 		ContentValues initialValues = createCMContent( filename, type, md5sum, size, date_added );
 
+		// FIXME: this is bad way of finding if record already exist. need to find nicer way
 		long inserted_id;
 		try
 		{

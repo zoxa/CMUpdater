@@ -5,8 +5,8 @@ package ca.zoxa.cyanogen.updater;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
 
 /**
  * @author zoxa
@@ -54,18 +54,25 @@ public class CMDBHandler extends SQLiteOpenHelper
 	public void onCreate( SQLiteDatabase sqLiteDatabase )
 	{
 		// create clog table
-		String sql = "CREATE TABLE " + NightliesAdapter.CL_TABLE + " (" + NightliesAdapter.CL_ID
-				+ " INTEGER PRIMARY KEY , " + NightliesAdapter.CL_PROJECT + " TEXT, "
-				+ NightliesAdapter.CL_SUBJECT + " TEXT, " + NightliesAdapter.CL_LAST_UPDATED
-				+ " INTEGER)";
+		StringBuilder sql = new StringBuilder( "CREATE TABLE " );
+		sql.append( NightliesAdapter.CL_TABLE ).append( " (" );
+		sql.append( NightliesAdapter.CL_ID ).append( " INTEGER PRIMARY KEY, " );
+		sql.append( NightliesAdapter.CL_PROJECT ).append( " TEXT, " );
+		sql.append( NightliesAdapter.CL_SUBJECT ).append( " TEXT, " );
+		sql.append( NightliesAdapter.CL_LAST_UPDATED ).append( " INTEGER)" );
 
-		sqLiteDatabase.execSQL( sql );
+		sqLiteDatabase.execSQL( sql.toString() );
 
 		// create downloads table
-		sql = "CREATE TABLE " + NightliesAdapter.CM_TABLE + " ( " + NightliesAdapter.CM_FILENAME
-				+ " TEXT PRIMARY KEY, " + NightliesAdapter.CM_TYPE + " TEXT, "
-				+ NightliesAdapter.CM_MD5SUM + " TEXT, " + NightliesAdapter.CM_SIZE + " TEXT, "
-				+ NightliesAdapter.CM_DATE + " INTEGER)";
+		sql.setLength( 0 );
+		sql.append( "CREATE TABLE " ).append( NightliesAdapter.CM_TABLE ).append( " ( " );
+		sql.append( NightliesAdapter.CM_FILENAME ).append( " TEXT PRIMARY KEY, " );
+		sql.append( NightliesAdapter.CM_TYPE ).append( " TEXT, " );
+		sql.append( NightliesAdapter.CM_MD5SUM ).append( " TEXT, " );
+		sql.append( NightliesAdapter.CM_SIZE ).append( " TEXT, " );
+		sql.append( NightliesAdapter.CM_DATE ).append( " INTEGER) " );
+
+		sqLiteDatabase.execSQL( sql.toString() );
 	}
 
 	/*

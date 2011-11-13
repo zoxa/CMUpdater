@@ -9,20 +9,20 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ExpandableListView.OnGroupClickListener;
-import android.widget.TextView;
-import android.widget.Toast;
 
-public class CMupdaterActivity extends Activity
+public class CMUpdaterActivity extends Activity
 {
 	private String				device;
 
@@ -64,9 +64,9 @@ public class CMupdaterActivity extends Activity
 		// context menu
 		registerForContextMenu( listView );
 
-		// FIXME: failing when no db. need to catch exception
-		// this.adapter = new CMListAdapter( this );
-		// listView.setAdapter( adapter );
+		// set adapter
+		this.adapter = new CMListAdapter( this );
+		listView.setAdapter( adapter );
 	}
 
 	@Override
@@ -139,12 +139,13 @@ public class CMupdaterActivity extends Activity
 			int error = data.getInt( CMChangelog.MSG_DATA_KEY_ERROR, 0 );
 			if ( error == 0 )
 			{
+				// refresh list
 				Toast.makeText(
 						getApplicationContext(),
-						getString( R.string.msg_refres_done,
-								data.getInt( CMChangelog.MSG_DOWNLOADS_COUNT, 0 ),
-								data.getInt( CMChangelog.MSG_JSON_COUNT, 0 ) ), Toast.LENGTH_LONG )
-						.show();
+						getString( R.string.msg_refres_done, data.getInt(
+								CMChangelog.MSG_DOWNLOADS_COUNT, 0 ), data.getInt(
+								CMChangelog.MSG_JSON_COUNT, 0 ) ), Toast.LENGTH_LONG ).show();
+				adapter.notifyDataSetChanged();
 			}
 			else if ( CMChangelog.ERROR_CODE_HTTP_FAIL == error )
 			{
