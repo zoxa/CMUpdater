@@ -16,7 +16,7 @@
     <!-- END: Preferences -->
 
     <string name="msg_refreshing">Refresh started</string>
-    <string name="msg_refres_done" formatted="false">Refresh done:\nDownloads: %d Changes: %d</string>
+    <string formatted="false" name="msg_refres_done">Refresh done:\nDownloads: %d Changes: %d</string>
 
     <!-- Error messages -->
     <string name="err_msg_http_fail">API is down</string>
@@ -24,5 +24,10 @@
     <string name="err_msg_json_parse">Cannot parse JSON</string>
     <string name="err_msg_db_open">Fail to open database connection</string>
     <!-- END: Error messages -->
+
+    <string name="menu_cl_openurl">Preview in Browser</string>
+    <string name="menu_dl_openurl">Open Download page</string>
+    <string name="menu_dl_download">Download</string>
+    <string name="menu_dl_download_browser">Download via Browser</string>
 
 </resources>

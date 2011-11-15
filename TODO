@@ -1,14 +1,18 @@
 
-- Refresh List after db updating ( have number of changes/updates )
-- Work around empty non existing db. No, db need to create and refresh
-- Move code fillChangeLog into separate function
++ Refresh List after db updating ( have number of changes/updates )
++ Work around empty non existing db. No, db need to create and refresh
++ Move code fillChangeLog into separate function
 
 - Sync prefrences
 -- Notify about new changelog
 -- Notify about new downloads
 
 - Context Menu:
--- Downloads: navigate to page, download, flush?!
--- Changelogs: navigate to change at git.
-
+-- Downloads: 
+	+ navigate to page,
+	+ download via browser 
+	- download, 
+	- flush?!
+-- Changelogs: 
+	+ navigate to change at git.
 

@@ -3,6 +3,7 @@ package ca.zoxa.cyanogen.updater;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -16,11 +17,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.ExpandableListView;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
-import android.widget.ExpandableListView.OnChildClickListener;
-import android.widget.ExpandableListView.OnGroupClickListener;
 
 public class CMUpdaterActivity extends Activity
 {
@@ -57,15 +55,12 @@ public class CMUpdaterActivity extends Activity
 
 		// Retrieve and bind list view
 		ExpandableListView listView = (ExpandableListView) findViewById( R.id.listView );
-		// click events
-		listView.setOnGroupClickListener( new GroupClickListener() );
-		listView.setOnChildClickListener( new ChildClickListener() );
 
 		// context menu
 		registerForContextMenu( listView );
 
 		// set adapter
-		this.adapter = new CMListAdapter( this );
+		this.adapter = new CMListAdapter( this, device );
 		listView.setAdapter( adapter );
 	}
 
@@ -73,7 +68,7 @@ public class CMUpdaterActivity extends Activity
 	public boolean onCreateOptionsMenu( Menu menu )
 	{
 		MenuInflater inflater = getMenuInflater();
-		inflater.inflate( R.menu.menu_main, menu );
+		inflater.inflate( R.menu.main, menu );
 		return true;
 	}
 
@@ -115,6 +110,7 @@ public class CMUpdaterActivity extends Activity
 			// device was changed, call refresh logic
 			if ( !device.equals( oldDevice ) )
 			{
+				adapter.setDevice( device );
 				menuCallRefresh();
 			}
 		}
@@ -171,60 +167,79 @@ public class CMUpdaterActivity extends Activity
 		}
 	}
 
-	/* List View functions */
-	private class GroupClickListener implements OnGroupClickListener
-	{
-		public boolean onGroupClick( ExpandableListView parent, View v, int groupPosition, long id )
-		{
-			// TODO Auto-generated method stub
-			return false;
-		}
-	}
-
-	private class ChildClickListener implements OnChildClickListener
-	{
-		public boolean onChildClick( ExpandableListView parent, View v, int groupPosition,
-				int childPosition, long id )
-		{
-			// TODO Auto-generated method stub
-			return false;
-		}
-	}
-
-	@Override
 	public void onCreateContextMenu( ContextMenu menu, View v, ContextMenuInfo menuInfo )
 	{
 		Log.d( TAG, "onCreateContextMenu" );
-		menu.setHeaderTitle( "Sample menu" );
-		menu.add( 0, 0, 0, "Test" );
+		super.onCreateContextMenu( menu, v, menuInfo );
+
+		// XXX: Stupid casting
+		ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) menuInfo;
+
+		MenuInflater inflater = getMenuInflater();
+		int type = ExpandableListView.getPackedPositionType( info.packedPosition );
+		switch ( type )
+		{
+			case ExpandableListView.PACKED_POSITION_TYPE_GROUP:
+				inflater.inflate( R.menu.downloads, menu );
+				break;
+			case ExpandableListView.PACKED_POSITION_TYPE_CHILD:
+				inflater.inflate( R.menu.changelog, menu );
+				break;
+		}
 	}
 
 	@Override
 	public boolean onContextItemSelected( MenuItem item )
 	{
 		Log.d( TAG, "onContextItemSelected" );
-		ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) item.getMenuInfo();
 
-		String title = ( (TextView) info.targetView ).getText().toString();
+		ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) item.getMenuInfo();
 
 		int type = ExpandableListView.getPackedPositionType( info.packedPosition );
 		if ( type == ExpandableListView.PACKED_POSITION_TYPE_CHILD )
 		{
-			int groupPos = ExpandableListView.getPackedPositionGroup( info.packedPosition );
-			int childPos = ExpandableListView.getPackedPositionChild( info.packedPosition );
-			Toast.makeText( this, title + ": Child " + childPos + " clicked in group " + groupPos,
-					Toast.LENGTH_SHORT ).show();
-			return true;
+			int downloadPosition = ExpandableListView.getPackedPositionGroup( info.packedPosition );
+			int changelogPostion = ExpandableListView.getPackedPositionChild( info.packedPosition );
+
+			CMListAdapter.ChangeLogRecord cl = this.adapter.getChild( downloadPosition,
+					changelogPostion );
+
+			// Handle item selection
+			switch ( item.getItemId() )
+			{
+				case R.id.cl_openurl:
+
+					startActivity( new Intent( Intent.ACTION_VIEW, Uri.parse( String.format(
+							CMListAdapter.CHANGELOG_URL, cl.id ) ) ) );
+					return true;
+			}
+
 		}
 		else if ( type == ExpandableListView.PACKED_POSITION_TYPE_GROUP )
 		{
-			int groupPos = ExpandableListView.getPackedPositionGroup( info.packedPosition );
-			Toast.makeText( this, title + ": Group " + groupPos + " clicked", Toast.LENGTH_SHORT )
-					.show();
-			return true;
+			int downloadPosition = ExpandableListView.getPackedPositionGroup( info.packedPosition );
+			CMListAdapter.DownloadsRecord dl = this.adapter.getGroup( downloadPosition );
+
+			// Handle item selection
+			switch ( item.getItemId() )
+			{
+				case R.id.dl_openurl:
+					startActivity( new Intent( Intent.ACTION_VIEW, Uri.parse( String.format(
+							CMListAdapter.DOWNLOAD_LIST, this.device, dl.type.toLowerCase() ) ) ) );
+					return true;
+
+				case R.id.dl_download_browser:
+					startActivity( new Intent( Intent.ACTION_VIEW, Uri.parse( String.format(
+							CMListAdapter.DOWNLOAD_URL, dl.filename ) ) ) );
+					return true;
+
+				case R.id.dl_download:
+					// TODO: implement ZIP download via application use
+					Uri uri1 = Uri.parse( String.format( CMListAdapter.DOWNLOAD_URL, dl.filename ) );
+					return true;
+			}
 		}
 
-		return false;
+		return super.onContextItemSelected( item );
 	}
-
 }

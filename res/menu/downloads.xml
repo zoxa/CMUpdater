@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/dl_openurl"
+        android:enabled="true"
+        android:title="@string/menu_dl_openurl"
+        android:visible="true"/>
+
+    <item
+        android:id="@+id/dl_download"
+        android:enabled="true"
+        android:title="@string/menu_dl_download"
+        android:visible="true"/>
+
+    <item
+        android:id="@+id/dl_download_browser"
+        android:enabled="true"
+        android:title="@string/menu_dl_download_browser"
+        android:visible="true"/>
+
+</menu>

@@ -16,15 +16,24 @@ import android.widget.TextView;
 public class CMListAdapter extends BaseExpandableListAdapter
 {
 	private final Context		context;
+	private String				device;
+
 	private DownloadsRecord[]	downloads;
 	private ChangeLogRecord[][]	changelogs;
 
-	private final String		TAG	= "CMAdapter";
+	private final String		TAG				= "CMAdapter";
 
-	public CMListAdapter( final Context context )
+	// URLS
+	public static String		CHANGELOG_URL	= "http://review.cyanogenmod.com/%d";
+
+	public static String		DOWNLOAD_LIST	= "http://download.cyanogenmod.com/?device=%s&type=%s";
+	public static String		DOWNLOAD_URL	= "http://download.cyanogenmod.com/get/%s";
+
+	public CMListAdapter( final Context context, String device )
 	{
 		super();
 		this.context = context;
+		this.device = device;
 		fillData();
 	}
 
@@ -55,10 +64,15 @@ public class CMListAdapter extends BaseExpandableListAdapter
 		subject.setText( cl.subject );
 
 		TextView project = (TextView) convertView.findViewById( R.id.cl_project );
-		project.setText( cl.project );
+		project.setText( '(' + cl.project + ')' );
 
 		// XXX: check if this is:
-		// device change: {subject+project} contains _{device} {device}: {device}Cap
+		// device change: project contains {device}
+		if ( cl.project.toLowerCase().contains( device ) )
+		{
+			convertView.setBackgroundColor( this.context.getResources().getColor(
+					R.color.cl_device_bg ) );
+		}
 		// translation : subject ranslat, ocaliz, ussian, hinese, ortug, erman, wedish, typo
 
 		return convertView;
@@ -277,11 +291,15 @@ public class CMListAdapter extends BaseExpandableListAdapter
 		super.notifyDataSetChanged();
 	}
 
+	public void setDevice( String device )
+	{
+		this.device = device;
+	}
+
 	/**
 	 * Set for Downloads Record
 	 */
-	@SuppressWarnings("unused")
-	private class DownloadsRecord
+	public class DownloadsRecord
 	{
 		public String	type;
 		public String	filename;
@@ -293,8 +311,7 @@ public class CMListAdapter extends BaseExpandableListAdapter
 	/**
 	 * Set for Change Log Record
 	 */
-	@SuppressWarnings("unused")
-	private class ChangeLogRecord
+	public class ChangeLogRecord
 	{
 		public int		id;
 		public String	project;

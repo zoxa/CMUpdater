@@ -9,7 +9,7 @@
         android:id="@+id/cl_subject"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text=""
+        android:text="test"
         android:textSize="15dp"
         android:textStyle="normal" />
 
@@ -19,7 +19,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_below="@id/cl_subject"
-        android:text=""
+        android:text="test"
+        android:textColor="@color/cl_project"
         android:textSize="15dp"
         android:textStyle="normal" />
 

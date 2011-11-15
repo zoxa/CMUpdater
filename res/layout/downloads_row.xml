@@ -1,7 +1,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/downloads_layout"
     android:layout_width="fill_parent"
-    android:layout_height="45dp" >
+    android:layout_height="45dp" 
+    >
 
     <TextView
         android:id="@+id/dl_filename"
@@ -19,6 +20,7 @@
         android:layout_below="@id/dl_filename"
         android:layout_marginLeft="35dp"
         android:text=""
+        android:textColor="@color/dl_date_added"
         android:textSize="15dp"
         android:textStyle="normal" />
 

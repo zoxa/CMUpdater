@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="dl_date_added">#555555</color>
+    
+    <color name="cl_project">#336699</color>
+    <color name="cl_device_bg">#222</color>
+
+</resources>
